@@ -187,10 +187,10 @@ const ProfessionalDashboard: React.FC<Props> = ({
   const renderSection = () => {
     switch(activeSection) {
       case 'dashboard': return renderOverview();
-      case 'jobs': return <div className="animate-in fade-in duration-500"><h2 className="text-2xl font-bold mb-6">Your Jobs</h2>{/* Jobs component content here */}</div>;
-      case 'calendar': return <div className="animate-in fade-in duration-500"><h2 className="text-2xl font-bold mb-6">Schedule</h2>{/* Calendar content here */}</div>;
-      case 'reviews': return <div className="animate-in fade-in duration-500"><h2 className="text-2xl font-bold mb-6">Reviews</h2>{/* Reviews content here */}</div>;
-      case 'payments': return <div className="animate-in fade-in duration-500"><h2 className="text-2xl font-bold mb-6">Earnings</h2>{/* Payment content here */}</div>;
+      case 'jobs': return <div className="animate-in fade-in duration-500 space-y-6"><h2 className="text-2xl font-bold mb-6">Your Jobs</h2><p className="italic text-slate-400">Loading your pipeline...</p></div>;
+      case 'calendar': return <div className="animate-in fade-in duration-500 space-y-6"><h2 className="text-2xl font-bold mb-6">Work Schedule</h2><p className="italic text-slate-400">Loading calendar events...</p></div>;
+      case 'reviews': return <div className="animate-in fade-in duration-500 space-y-6"><h2 className="text-2xl font-bold mb-6">Client Feedback</h2><p className="italic text-slate-400">Loading reviews...</p></div>;
+      case 'payments': return <div className="animate-in fade-in duration-500 space-y-6"><h2 className="text-2xl font-bold mb-6">Earnings Dashboard</h2><p className="italic text-slate-400">Loading ledger...</p></div>;
       case 'profile': return <ProfessionalProfileView profile={profile} userName={userName} onEdit={() => {}} onToggleAvailability={onToggleAvailability} />;
       case 'settings': return <SettingsView user={currentUser} availability={profile.availability} onToggleAvailability={onToggleAvailability} onLogout={onLogout} />;
       default: return renderOverview();

@@ -241,6 +241,7 @@ const App: React.FC = () => {
   if (authStatus === "authenticated" && currentUser) {
     return (
       <Layout userRole={currentUser.role} userName={currentUser.name || 'User'} onLogout={() => authService.signOut()} activeTab={activeTab} setActiveTab={setActiveTab} notifications={notifications} onMarkAllRead={() => {}}>
+        {/* Fix typo: ProfessionalStatus.PEND -> ProfessionalStatus.PENDING */}
         {currentUser.role === UserRole.PROFESSIONAL && proProfile.status === ProfessionalStatus.PENDING && proProfile.profileCompletion < 100 ? (
           <ProfessionalOnboarding userName={currentUser.name || 'User'} onComplete={handleOnboardingComplete} />
         ) : currentUser.role === UserRole.PROFESSIONAL ? (

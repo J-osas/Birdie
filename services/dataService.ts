@@ -131,10 +131,16 @@ export const dataService = {
   },
 
   async updateProfessionalStatus(userId: string, status: ProfessionalStatus) {
+    const isVerified = status === ProfessionalStatus.VERIFIED || status === ProfessionalStatus.APPROVED;
     const { error } = await supabase
       .from('professional_profiles')
-      .update({ status: status.toLowerCase(), updated_at: new Date().toISOString() })
+      .update({ 
+        status: status.toLowerCase(), 
+        public_visible: isVerified,
+        updated_at: new Date().toISOString() 
+      })
       .eq('user_id', userId);
+    
     if (error) throw error;
     return true;
   },
@@ -151,7 +157,8 @@ export const dataService = {
             category,
             status,
             aptitude_score,
-            rating
+            rating,
+            bio
           )
         `)
         .eq('role', 'professional'); 
@@ -166,11 +173,57 @@ export const dataService = {
           category: pro.category || 'Driver',
           score: pro.aptitude_score || 0,
           status: (pro.status || ProfessionalStatus.PENDING) as ProfessionalStatus,
-          rating: pro.rating || 0
+          rating: pro.rating || 0,
+          bio: pro.bio || ''
         };
       });
     } catch (e) {
       console.error("DataService Error (AllPros):", e);
+      return [];
+    }
+  },
+
+  async getPublicProfessionals(): Promise<any[]> {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select(`
+          id,
+          full_name,
+          role,
+          professional_profiles!inner (
+            category,
+            status,
+            aptitude_score,
+            rating,
+            bio,
+            location,
+            availability
+          )
+        `)
+        .eq('professional_profiles.public_visible', true)
+        .eq('professional_profiles.status', 'verified');
+      
+      if (error || !data) return [];
+      
+      return data.map((d: any) => {
+        const pro = d.professional_profiles?.[0] || {};
+        return {
+          id: d.id,
+          userId: d.full_name || 'Birdie Pro',
+          category: pro.category || 'Driver',
+          location: pro.location || 'Lagos',
+          rating: pro.rating || 0,
+          availability: (pro.availability || Availability.AVAILABLE) as Availability,
+          status: (pro.status || ProfessionalStatus.VERIFIED) as ProfessionalStatus,
+          aptitudeScore: pro.aptitude_score || 0,
+          bio: pro.bio || '',
+          reviewCount: 0,
+          completedJobs: 0
+        };
+      });
+    } catch (e) {
+      console.error("DataService Error (PublicPros):", e);
       return [];
     }
   },

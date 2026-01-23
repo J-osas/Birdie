@@ -36,7 +36,9 @@ import {
   Lock,
   Wallet as WalletIcon,
   Trash2,
-  UserCog
+  UserCog,
+  ChevronDown,
+  Info
 } from 'lucide-react';
 import { ProfessionalProfile, ProfessionalStatus, UserRole, RequestStatus, WalletTransaction, HireRequest, Review, WithdrawalRequest, WithdrawalStatus, TransactionStatus, User, UserStatus } from '../types';
 import { GET_STATUS_STYLE } from '../constants';
@@ -56,7 +58,7 @@ interface Props {
     totalReviews: number;
     avgRating: number;
   };
-  prosToVet: { id: string, name: string, category: string, score: number, status: ProfessionalStatus, rating: number }[];
+  prosToVet: { id: string, name: string, category: string, score: number, status: ProfessionalStatus, rating: number, bio?: string }[];
   hireRequests: HireRequest[];
   transactions: WalletTransaction[];
   payoutQueue: WithdrawalRequest[];
@@ -82,7 +84,7 @@ const AdminDashboard: React.FC<Props> = ({
   activeSection 
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+  const [expandedPro, setExpandedPro] = useState<string | null>(null);
   const [allUsers, setAllUsers] = useState<User[]>([]);
   const [loadingUsers, setLoadingUsers] = useState(false);
 
@@ -292,43 +294,82 @@ const AdminDashboard: React.FC<Props> = ({
                      <tr>
                        <th className="px-8 py-4 text-[10px] font-bold text-slate-400 uppercase">Professional</th>
                        <th className="px-8 py-4 text-[10px] font-bold text-slate-400 uppercase">Category (Role)</th>
-                       <th className="px-8 py-4 text-[10px] font-bold text-slate-400 uppercase">Assessment Score</th>
-                       <th className="px-8 py-4 text-[10px] font-bold text-slate-400 uppercase">Status</th>
-                       <th className="px-8 py-4 text-[10px] font-bold text-slate-400 uppercase">Action</th>
+                       <th className="px-8 py-4 text-[10px] font-bold text-slate-400 uppercase text-center">Aptitude Score</th>
+                       <th className="px-8 py-4 text-[10px] font-bold text-slate-400 uppercase text-center">Status</th>
+                       <th className="px-8 py-4 text-[10px] font-bold text-slate-400 uppercase text-right">Action</th>
                      </tr>
                    </thead>
                    <tbody className="divide-y divide-slate-50">
                      {prosToVet.map(pro => (
-                       <tr key={pro.id} className="hover:bg-slate-50 transition-colors">
-                         <td className="px-8 py-4 font-bold text-sm">{pro.name}</td>
-                         <td className="px-8 py-4 text-sm text-slate-500 font-bold uppercase tracking-widest">{pro.category}</td>
-                         <td className="px-8 py-4">
-                           <div className="flex items-center gap-2">
-                             <span className="font-bold text-xs">{pro.score}%</span>
-                             <div className="w-16 h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                               <div className={`h-full ${pro.score > 70 ? 'bg-emerald-500' : pro.score > 40 ? 'bg-amber-500' : 'bg-rose-500'}`} style={{width:`${pro.score}%`}} />
+                       <React.Fragment key={pro.id}>
+                         <tr className="hover:bg-slate-50/50 transition-colors cursor-pointer" onClick={() => setExpandedPro(expandedPro === pro.id ? null : pro.id)}>
+                           <td className="px-8 py-4">
+                             <div className="flex items-center gap-2">
+                               <ChevronDown size={14} className={`text-slate-300 transition-transform ${expandedPro === pro.id ? 'rotate-180' : ''}`} />
+                               <span className="font-bold text-sm">{pro.name}</span>
                              </div>
-                           </div>
-                         </td>
-                         <td className="px-8 py-4">
-                           <span className={`px-2 py-1 rounded text-[8px] font-bold uppercase border ${
-                             pro.status === ProfessionalStatus.VERIFIED || pro.status === ProfessionalStatus.APPROVED ? 'bg-emerald-50 text-emerald-700 border-emerald-100' :
-                             pro.status === ProfessionalStatus.UNDER_REVIEW ? 'bg-amber-50 text-amber-700 border-amber-100' : 'bg-slate-50 text-slate-400 border-slate-200'
-                           }`}>
-                             {pro.status}
-                           </span>
-                         </td>
-                         <td className="px-8 py-4">
-                            {pro.status !== ProfessionalStatus.VERIFIED && (
-                               <button 
-                                onClick={() => onApprovePro(pro.id)} 
-                                className="bg-[#660033] text-white px-4 py-1.5 rounded-lg font-bold text-[10px] hover:bg-[#2B0116] transition-all uppercase shadow-md shadow-[#660033]/10"
-                               >
-                                 Verify Pro
-                               </button>
-                            )}
-                         </td>
-                       </tr>
+                           </td>
+                           <td className="px-8 py-4 text-xs text-slate-500 font-bold uppercase tracking-widest">{pro.category}</td>
+                           <td className="px-8 py-4">
+                             <div className="flex items-center justify-center gap-2">
+                               <span className="font-bold text-xs">{pro.score}%</span>
+                               <div className="w-16 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                                 <div className={`h-full ${pro.score > 70 ? 'bg-emerald-500' : pro.score > 40 ? 'bg-amber-500' : 'bg-rose-500'}`} style={{width:`${pro.score}%`}} />
+                               </div>
+                             </div>
+                           </td>
+                           <td className="px-8 py-4 text-center">
+                             <span className={`px-2 py-1 rounded text-[8px] font-bold uppercase border ${
+                               pro.status === ProfessionalStatus.VERIFIED || pro.status === ProfessionalStatus.APPROVED ? 'bg-emerald-50 text-emerald-700 border-emerald-100' :
+                               pro.status === ProfessionalStatus.UNDER_REVIEW ? 'bg-amber-50 text-amber-700 border-amber-100' : 'bg-slate-50 text-slate-400 border-slate-200'
+                             }`}>
+                               {pro.status}
+                             </span>
+                           </td>
+                           <td className="px-8 py-4 text-right">
+                              {pro.status !== ProfessionalStatus.VERIFIED && (
+                                 <button 
+                                  onClick={(e) => { e.stopPropagation(); onApprovePro(pro.id); }} 
+                                  className="bg-[#660033] text-white px-4 py-1.5 rounded-lg font-bold text-[10px] hover:bg-[#2B0116] transition-all uppercase shadow-md shadow-[#660033]/10"
+                                 >
+                                   Verify Pro
+                                 </button>
+                              )}
+                           </td>
+                         </tr>
+                         {expandedPro === pro.id && (
+                           <tr className="bg-slate-50/30">
+                             <td colSpan={5} className="px-8 py-6">
+                               <div className="bg-white border border-slate-100 rounded-2xl p-6 shadow-inner space-y-4 animate-in slide-in-from-top-2 duration-300">
+                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                   <div className="space-y-3">
+                                     <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
+                                       <FileText size={12} /> Professional Bio
+                                     </h4>
+                                     <p className="text-sm text-slate-600 leading-relaxed italic">{pro.bio || "No bio provided."}</p>
+                                   </div>
+                                   <div className="space-y-4">
+                                      <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] flex items-center gap-2">
+                                        <TrendingUp size={12} /> Assessment Result Detail
+                                      </h4>
+                                      <div className="bg-[#660033]/5 p-4 rounded-xl border border-[#660033]/10 flex items-center justify-between">
+                                        <div>
+                                          <p className="text-xs font-bold text-[#660033]">Aptitude & Attitude Score</p>
+                                          <p className="text-[10px] text-slate-500">Based on Hummingbird Dove-Grade Test</p>
+                                        </div>
+                                        <div className="text-2xl font-black text-[#660033]">{pro.score}%</div>
+                                      </div>
+                                      <div className="flex gap-2">
+                                        <button className="flex-1 py-2 bg-slate-50 text-slate-500 rounded-lg text-[9px] font-bold uppercase hover:bg-slate-100 transition-colors">View All Answers</button>
+                                        <button className="flex-1 py-2 bg-slate-50 text-slate-500 rounded-lg text-[9px] font-bold uppercase hover:bg-slate-100 transition-colors">Background Report</button>
+                                      </div>
+                                   </div>
+                                 </div>
+                               </div>
+                             </td>
+                           </tr>
+                         )}
+                       </React.Fragment>
                      ))}
                    </tbody>
                  </table>
@@ -408,17 +449,7 @@ const AdminDashboard: React.FC<Props> = ({
              <button 
               key={tab}
               onClick={() => { 
-                // In App.tsx the activeTab state controls this, we are using the passed activeSection prop
-                const nav: any = {
-                   'stats': 'stats',
-                   'pros': 'pros',
-                   'requests': 'requests',
-                   'user-management': 'clients',
-                   'content-cms': 'content-cms',
-                   'communications': 'communications',
-                   'revenue': 'revenue'
-                };
-                // This would ideally trigger a parent setActiveTab, but let's assume it's handled by the sidebar
+                // Navigation logic is handled by the parent App component activeTab
               }}
               className={`px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest whitespace-nowrap transition-all ${
                 activeSection === tab ? 'bg-[#660033] text-white' : 'bg-white border border-slate-100 text-slate-400 hover:text-slate-600'

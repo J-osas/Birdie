@@ -126,7 +126,12 @@ const ProfessionalDashboard: React.FC<Props> = ({
         <div className="absolute top-0 left-0 w-2 h-full bg-[#660033]" />
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-8">
           <div className="space-y-2">
-            <h1 className="text-3xl md:text-4xl font-bold text-slate-900 tracking-tight">Welcome back, {firstName}</h1>
+            <div className="flex items-center gap-3">
+              <h1 className="text-3xl md:text-4xl font-bold text-slate-900 tracking-tight">Welcome back, {firstName}</h1>
+              {(profile.status === ProfessionalStatus.VERIFIED || profile.status === ProfessionalStatus.APPROVED) && (
+                <span className="bg-emerald-50 text-emerald-600 border border-emerald-100 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest flex items-center gap-1.5"><ShieldCheck size={14} /> Verified</span>
+              )}
+            </div>
             <p className="text-slate-500 font-medium">You have {requests.filter(r => r.status === RequestStatus.PENDING).length} new requests waiting for your response.</p>
           </div>
           

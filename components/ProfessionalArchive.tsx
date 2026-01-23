@@ -4,38 +4,96 @@ import { Search, MapPin, Briefcase, Star, ShieldCheck, Filter, ChevronRight, Sli
 import { CATEGORIES } from '../constants';
 import { Availability, ProfessionalStatus, ProfessionalProfile } from '../types';
 
-// Mock Extended Data for Archive
-// Added missing publicVisible and createdAt properties to resolve type errors
+// Add MOCK_ARCHIVE_PROS export to resolve import error in HireFlow.tsx
 export const MOCK_ARCHIVE_PROS: ProfessionalProfile[] = [
-  { id: '1', userId: 'Tunde Okafor', category: 'Driver', location: 'Lekki Phase 1, Lagos', rating: 4.8, reviewCount: 32, availability: Availability.AVAILABLE, status: ProfessionalStatus.VERIFIED, completedJobs: 124, profileCompletion: 100, isVetted: true, aptitudeScore: 92, bio: 'Expert driver with executive experience. Punctual and deeply familiar with Island routes.', publicVisible: true, createdAt: '2023-01-01T00:00:00Z' },
-  { id: '2', userId: 'Amaka Eze', category: 'Nanny', location: 'Ikeja, Lagos', rating: 5.0, reviewCount: 18, availability: Availability.ON_JOB, status: ProfessionalStatus.VERIFIED, completedJobs: 45, profileCompletion: 100, isVetted: true, aptitudeScore: 88, bio: 'Caring and certified early childhood educator. Specialized in newborn care.', publicVisible: true, createdAt: '2023-01-01T00:00:00Z' },
-  { id: '3', userId: 'Babatunde John', category: 'Security', location: 'Victoria Island, Lagos', rating: 4.9, reviewCount: 54, availability: Availability.AVAILABLE, status: ProfessionalStatus.VERIFIED, completedJobs: 210, profileCompletion: 100, isVetted: true, aptitudeScore: 95, bio: 'Former military personnel offering private residential security and surveillance.', publicVisible: true, createdAt: '2023-01-01T00:00:00Z' },
-  { id: '4', userId: 'Sarah Wilson', category: 'Chef', location: 'Ikoyi, Lagos', rating: 4.7, reviewCount: 22, availability: Availability.AVAILABLE, status: ProfessionalStatus.VERIFIED, completedJobs: 67, profileCompletion: 100, isVetted: true, aptitudeScore: 85, bio: 'Specialist in Intercontinental and Nigerian delicacies. Available for home catering.', publicVisible: true, createdAt: '2023-01-01T00:00:00Z' },
-  { id: '5', userId: 'James Ade', category: 'Gardener', location: 'Ajah, Lagos', rating: 4.6, reviewCount: 15, availability: Availability.AVAILABLE, status: ProfessionalStatus.VERIFIED, completedJobs: 33, profileCompletion: 100, isVetted: true, aptitudeScore: 82, bio: 'Passionate about landscape design and organic gardening. Expert in lawn maintenance.', publicVisible: true, createdAt: '2023-01-01T00:00:00Z' },
-  { id: '6', userId: 'Kemi Balogun', category: 'House Help', location: 'Surulere, Lagos', rating: 4.5, reviewCount: 41, availability: Availability.ON_JOB, status: ProfessionalStatus.VERIFIED, completedJobs: 89, profileCompletion: 100, isVetted: true, aptitudeScore: 84, bio: 'Diligent and trustworthy. Specialized in thorough cleaning and home organization.', publicVisible: true, createdAt: '2023-01-01T00:00:00Z' },
+  {
+    id: 'p-1',
+    userId: 'Tunde Afolayan',
+    category: 'Driver',
+    bio: 'Experienced executive driver with over 10 years of experience navigating Lagos traffic safely.',
+    location: 'Lekki, Lagos',
+    availability: Availability.AVAILABLE,
+    profileCompletion: 100,
+    status: ProfessionalStatus.VERIFIED,
+    publicVisible: true,
+    createdAt: new Date().toISOString(),
+    rating: 4.8,
+    reviewCount: 24,
+    completedJobs: 156,
+    aptitudeScore: 92
+  },
+  {
+    id: 'p-2',
+    userId: 'Blessing Okon',
+    category: 'Nanny',
+    bio: 'Certified childcare professional with first aid training and a passion for early childhood development.',
+    location: 'Ikeja, Lagos',
+    availability: Availability.AVAILABLE,
+    profileCompletion: 100,
+    status: ProfessionalStatus.VERIFIED,
+    publicVisible: true,
+    createdAt: new Date().toISOString(),
+    rating: 4.9,
+    reviewCount: 42,
+    completedJobs: 89,
+    aptitudeScore: 88
+  },
+  {
+    id: 'p-3',
+    userId: 'Samuel Udoh',
+    category: 'Chef',
+    bio: 'Professional chef specializing in both local and continental dishes. Punctual and hygienic.',
+    location: 'Victoria Island, Lagos',
+    availability: Availability.AVAILABLE,
+    profileCompletion: 100,
+    status: ProfessionalStatus.VERIFIED,
+    publicVisible: true,
+    createdAt: new Date().toISOString(),
+    rating: 4.7,
+    reviewCount: 18,
+    completedJobs: 45,
+    aptitudeScore: 95
+  },
+  {
+    id: 'p-4',
+    userId: 'Grace Ibe',
+    category: 'House Help',
+    bio: 'Diligent and trustworthy house help with experience in high-paced family environments.',
+    location: 'Surulere, Lagos',
+    availability: Availability.AVAILABLE,
+    profileCompletion: 100,
+    status: ProfessionalStatus.VERIFIED,
+    publicVisible: true,
+    createdAt: new Date().toISOString(),
+    rating: 4.6,
+    reviewCount: 12,
+    completedJobs: 34,
+    aptitudeScore: 85
+  }
 ];
 
 interface Props {
+  proList: ProfessionalProfile[];
   onViewProfile: (id: string) => void;
   onHire: (pro: ProfessionalProfile) => void;
 }
 
-const ProfessionalArchive: React.FC<Props> = ({ onViewProfile, onHire }) => {
+const ProfessionalArchive: React.FC<Props> = ({ proList, onViewProfile, onHire }) => {
   const [filterCategory, setFilterCategory] = useState('All');
   const [filterLocation, setFilterLocation] = useState('All');
   const [filterStatus, setFilterStatus] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
 
   const filteredPros = useMemo(() => {
-    return MOCK_ARCHIVE_PROS.filter(pro => {
+    return proList.filter(pro => {
       const matchCat = filterCategory === 'All' || pro.category === filterCategory;
       const matchLoc = filterLocation === 'All' || pro.location?.includes(filterLocation);
       const matchStatus = filterStatus === 'All' || pro.availability === filterStatus;
-      const matchSearch = pro.userId.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                          pro.bio.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchSearch = (pro.userId || '').toLowerCase().includes(searchQuery.toLowerCase()) || 
+                          (pro.bio || '').toLowerCase().includes(searchQuery.toLowerCase());
       return matchCat && matchLoc && matchStatus && matchSearch;
     });
-  }, [filterCategory, filterLocation, filterStatus, searchQuery]);
+  }, [filterCategory, filterLocation, filterStatus, searchQuery, proList]);
 
   return (
     <div className="min-h-screen bg-[#F8FAFB] pb-20">
@@ -136,7 +194,7 @@ const ProfessionalArchive: React.FC<Props> = ({ onViewProfile, onHire }) => {
                     <Star size={12} className="fill-amber-400 text-amber-400" />
                     <span className="text-[10px] font-bold text-slate-900">{pro.rating}</span>
                   </div>
-                  {pro.status === ProfessionalStatus.VERIFIED && (
+                  {(pro.status === ProfessionalStatus.VERIFIED || pro.status === ProfessionalStatus.APPROVED) && (
                     <div className="absolute top-4 left-4 p-2 bg-[#660033] text-white rounded-full shadow-lg">
                       <ShieldCheck size={16} />
                     </div>
@@ -155,7 +213,7 @@ const ProfessionalArchive: React.FC<Props> = ({ onViewProfile, onHire }) => {
                   </div>
 
                   <p className="text-sm text-slate-500 line-clamp-2 leading-relaxed font-medium">
-                    {pro.bio}
+                    {pro.bio || "Certified professional ready to serve your household with top-tier expertise and reliability."}
                   </p>
 
                   <div className="flex items-center justify-between pt-2">

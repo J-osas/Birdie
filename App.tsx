@@ -28,7 +28,7 @@ import SettingsView from './components/SettingsView';
 import ProfessionalOnboarding from './components/ProfessionalOnboarding';
 import RequestDetail from './components/RequestDetail';
 import AdminDashboard from './components/AdminDashboard';
-import ProfessionalArchive, { MOCK_ARCHIVE_PROS } from './components/ProfessionalArchive';
+import ProfessionalArchive from './components/ProfessionalArchive';
 import PublicHeader from './components/PublicHeader';
 import PublicProfile from './components/PublicProfile';
 import HireFlow from './components/HireFlow';
@@ -89,13 +89,21 @@ const App: React.FC = () => {
   const [walletTransactions, setWalletTransactions] = useState<WalletTransaction[]>([]);
   const [withdrawalRequests, setWithdrawalRequests] = useState<WithdrawalRequest[]>([]);
   const [pendingPros, setPendingPros] = useState<any[]>([]);
+  const [publicPros, setPublicPros] = useState<any[]>([]);
+  const [selectedPublicPro, setSelectedPublicPro] = useState<any | null>(null);
   const [selectedBlogPost, setSelectedBlogPost] = useState<BlogPost | null>(null);
 
   const hydrate = useCallback(async () => {
     try {
       setAuthStatus("loading");
+      
+      // Load Public Data first (for unauthenticated users or those browsing)
+      const pPros = await dataService.getPublicProfessionals();
+      setPublicPros(pPros);
+
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) { setAuthStatus("unauthenticated"); return; }
+      
       const dbProfile = await authService.getProfile(session.user.id);
       if (!dbProfile) { setAuthStatus("loading"); return; }
 
@@ -181,8 +189,13 @@ const App: React.FC = () => {
   const handleApprovePro = async (userId: string) => {
     try {
       await dataService.updateProfessionalStatus(userId, ProfessionalStatus.VERIFIED);
-      const allPros = await dataService.getAllProfessionals();
+      const [allPros, pPros] = await Promise.all([
+        dataService.getAllProfessionals(),
+        dataService.getPublicProfessionals()
+      ]);
       setPendingPros(allPros);
+      setPublicPros(pPros);
+      alert("Professional verified successfully and is now visible on the marketplace.");
     } catch (e) {
       console.error("Verification Error:", e);
       alert("Failed to verify professional. Check console for details.");
@@ -235,19 +248,20 @@ const App: React.FC = () => {
     );
   }
 
+  const renderPublicContent = () => {
+    switch(publicView) {
+      case 'archive': return <ProfessionalArchive proList={publicPros} onViewProfile={(id) => { const p = publicPros.find(x => x.id === id); if(p) { setSelectedPublicPro(p); setPublicView('pro-profile'); } }} onHire={() => setIsHireFlowActive(true)} />;
+      case 'pro-profile': return selectedPublicPro && <PublicProfile profile={selectedPublicPro} reviews={[]} onBack={() => setPublicView('archive')} onHire={() => setIsHireFlowActive(true)} />;
+      case 'blog-archive': return <BlogArchive onSelectPost={(p) => { setSelectedBlogPost(p); setPublicView('blog-single'); }} />;
+      case 'blog-single': return selectedBlogPost && <BlogSingle post={selectedBlogPost} onBack={() => setPublicView('blog-archive')} />;
+      case 'about': return <AboutPage onHire={() => setIsHireFlowActive(true)} onApply={() => { setPublicView('home'); }} />;
+      case 'story': return <OurStoryPage onBack={() => setPublicView('home')} />;
+      case 'contact': return <ContactPage onHire={() => setIsHireFlowActive(true)} onApply={() => { setPublicView('home'); }} />;
+      default: return <HomePage onHire={() => setIsHireFlowActive(true)} onApply={() => {}} onViewArchive={() => setPublicView('archive')} onViewStory={() => setPublicView('story')} onViewBlog={() => setPublicView('blog-archive')} />;
+    }
+  };
+
   if (authStatus === "unauthenticated") {
-    const renderPublicContent = () => {
-      switch(publicView) {
-        case 'archive': return <ProfessionalArchive onViewProfile={(id) => { setPublicView('pro-profile'); }} onHire={() => setIsHireFlowActive(true)} />;
-        case 'pro-profile': return <PublicProfile profile={MOCK_ARCHIVE_PROS[0]} reviews={[]} onBack={() => setPublicView('archive')} onHire={() => setIsHireFlowActive(true)} />;
-        case 'blog-archive': return <BlogArchive onSelectPost={(p) => { setSelectedBlogPost(p); setPublicView('blog-single'); }} />;
-        case 'blog-single': return selectedBlogPost && <BlogSingle post={selectedBlogPost} onBack={() => setPublicView('blog-archive')} />;
-        case 'about': return <AboutPage onHire={() => setIsHireFlowActive(true)} onApply={() => { setPublicView('home'); }} />;
-        case 'story': return <OurStoryPage onBack={() => setPublicView('home')} />;
-        case 'contact': return <ContactPage onHire={() => setIsHireFlowActive(true)} onApply={() => { setPublicView('home'); }} />;
-        default: return <HomePage onHire={() => setIsHireFlowActive(true)} onApply={() => {}} onViewArchive={() => setPublicView('archive')} onViewStory={() => setPublicView('story')} onViewBlog={() => setPublicView('blog-archive')} />;
-      }
-    };
     if ((publicView as any) === 'login') return <LoginPage onLogin={handleLogin} onSwitchToRegister={() => setPublicView('register' as any)} onBack={() => setPublicView('home')} error={authError} />;
     if ((publicView as any) === 'register') return <RegisterPage onRegister={handleRegister} onSwitchToLogin={() => setPublicView('login' as any)} onBack={() => setPublicView('home')} error={authError} />;
     return (
@@ -269,7 +283,7 @@ const App: React.FC = () => {
         ) : (currentUser.role === UserRole.ADMIN || currentUser.role === UserRole.OPERATIONS) ? (
           <AdminDashboard stats={{ totalPros: pendingPros.length, pendingApps: pendingPros.filter(p => p.status === ProfessionalStatus.PENDING || p.status === ProfessionalStatus.UNDER_REVIEW).length, activeJobs: requests.filter(r => r.status === RequestStatus.ACTIVE).length, totalClients: 0, revenue: requests.reduce((acc, curr) => acc + (curr.amount || 0), 0), platformFees: requests.reduce((acc, curr) => acc + (curr.amount || 0), 0) * 0.15, completedJobs: requests.filter(r => r.status === RequestStatus.COMPLETED).length, totalReviews: 0, avgRating: 4.6 }} prosToVet={pendingPros} hireRequests={requests} transactions={[]} payoutQueue={withdrawalRequests} onApproveWithdrawal={() => {}} reviews={[]} onApprovePro={handleApprovePro} onUpdateJob={handleUpdateJob} onUpdateReviewStatus={() => {}} activeSection={activeTab} />
         ) : (
-          <div className="py-20 text-center space-y-6"><div className="w-20 h-20 bg-[#660033]/5 text-[#660033] rounded-3xl flex items-center justify-center mx-auto"><ShieldEllipsis size={40} /></div><h2 className="text-2xl font-bold">Client Dashboard Coming Soon</h2><button onClick={() => authService.signOut()} className="text-[#660033] font-bold underline">Logout</button></div>
+          <div className="flex-1">{renderPublicContent()}</div>
         )}
         {selectedRequest && <RequestDetail request={selectedRequest} onClose={() => setSelectedRequest(null)} onUpdateStatus={handleUpdateJob} />}
       </Layout>

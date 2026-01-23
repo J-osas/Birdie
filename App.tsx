@@ -178,6 +178,27 @@ const App: React.FC = () => {
     }
   };
 
+  const handleApprovePro = async (userId: string) => {
+    try {
+      await dataService.updateProfessionalStatus(userId, ProfessionalStatus.VERIFIED);
+      const allPros = await dataService.getAllProfessionals();
+      setPendingPros(allPros);
+    } catch (e) {
+      console.error("Verification Error:", e);
+      alert("Failed to verify professional. Check console for details.");
+    }
+  };
+
+  const handleUpdateJob = async (requestId: string, status: RequestStatus) => {
+    try {
+      await dataService.updateHireRequestStatus(requestId, status);
+      const allRequests = await dataService.getHireRequests(currentUser?.id || '', 'ADMIN');
+      setRequests(allRequests);
+    } catch (e) {
+      console.error("Job Update Error:", e);
+    }
+  };
+
   const handleLogin = async (email: string, pass: string) => {
     setAuthError(null);
     try {
@@ -241,17 +262,16 @@ const App: React.FC = () => {
   if (authStatus === "authenticated" && currentUser) {
     return (
       <Layout userRole={currentUser.role} userName={currentUser.name || 'User'} onLogout={() => authService.signOut()} activeTab={activeTab} setActiveTab={setActiveTab} notifications={notifications} onMarkAllRead={() => {}}>
-        {/* Fix typo: ProfessionalStatus.PEND -> ProfessionalStatus.PENDING */}
         {currentUser.role === UserRole.PROFESSIONAL && proProfile.status === ProfessionalStatus.PENDING && proProfile.profileCompletion < 100 ? (
           <ProfessionalOnboarding userName={currentUser.name || 'User'} onComplete={handleOnboardingComplete} />
         ) : currentUser.role === UserRole.PROFESSIONAL ? (
           <ProfessionalDashboard profile={proProfile} currentUser={currentUser} requests={requests} wallet={proWallet} transactions={walletTransactions} withdrawals={withdrawalRequests} onWithdrawRequest={() => {}} notifications={notifications} reviews={reviews} userName={currentUser.name || 'User'} activeSection={activeTab} onToggleAvailability={() => {}} onViewRequest={setSelectedRequest as any} onLogout={() => authService.signOut()} />
         ) : (currentUser.role === UserRole.ADMIN || currentUser.role === UserRole.OPERATIONS) ? (
-          <AdminDashboard stats={{ totalPros: pendingPros.length, pendingApps: pendingPros.filter(p => p.status === ProfessionalStatus.PENDING).length, activeJobs: requests.filter(r => r.status === RequestStatus.ACTIVE).length, totalClients: 0, revenue: requests.reduce((acc, curr) => acc + (curr.amount || 0), 0), platformFees: requests.reduce((acc, curr) => acc + (curr.amount || 0), 0) * 0.15, completedJobs: requests.filter(r => r.status === RequestStatus.COMPLETED).length, totalReviews: 0, avgRating: 4.6 }} prosToVet={pendingPros} hireRequests={requests} transactions={[]} payoutQueue={withdrawalRequests} onApproveWithdrawal={() => {}} reviews={[]} onApprovePro={() => {}} onUpdateJob={() => {}} onUpdateReviewStatus={() => {}} activeSection={activeTab} />
+          <AdminDashboard stats={{ totalPros: pendingPros.length, pendingApps: pendingPros.filter(p => p.status === ProfessionalStatus.PENDING || p.status === ProfessionalStatus.UNDER_REVIEW).length, activeJobs: requests.filter(r => r.status === RequestStatus.ACTIVE).length, totalClients: 0, revenue: requests.reduce((acc, curr) => acc + (curr.amount || 0), 0), platformFees: requests.reduce((acc, curr) => acc + (curr.amount || 0), 0) * 0.15, completedJobs: requests.filter(r => r.status === RequestStatus.COMPLETED).length, totalReviews: 0, avgRating: 4.6 }} prosToVet={pendingPros} hireRequests={requests} transactions={[]} payoutQueue={withdrawalRequests} onApproveWithdrawal={() => {}} reviews={[]} onApprovePro={handleApprovePro} onUpdateJob={handleUpdateJob} onUpdateReviewStatus={() => {}} activeSection={activeTab} />
         ) : (
           <div className="py-20 text-center space-y-6"><div className="w-20 h-20 bg-[#660033]/5 text-[#660033] rounded-3xl flex items-center justify-center mx-auto"><ShieldEllipsis size={40} /></div><h2 className="text-2xl font-bold">Client Dashboard Coming Soon</h2><button onClick={() => authService.signOut()} className="text-[#660033] font-bold underline">Logout</button></div>
         )}
-        {selectedRequest && <RequestDetail request={selectedRequest} onClose={() => setSelectedRequest(null)} onUpdateStatus={() => {}} />}
+        {selectedRequest && <RequestDetail request={selectedRequest} onClose={() => setSelectedRequest(null)} onUpdateStatus={handleUpdateJob} />}
       </Layout>
     );
   }

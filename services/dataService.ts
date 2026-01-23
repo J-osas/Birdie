@@ -65,6 +65,7 @@ export const dataService = {
     return true;
   },
 
+  // PROFESSIONAL MANAGEMENT
   async getProfessionalProfile(userId: string): Promise<ProfessionalProfile | null> {
     try {
       const { data, error } = await supabase
@@ -129,6 +130,15 @@ export const dataService = {
     }
   },
 
+  async updateProfessionalStatus(userId: string, status: ProfessionalStatus) {
+    const { error } = await supabase
+      .from('professional_profiles')
+      .update({ status: status.toLowerCase(), updated_at: new Date().toISOString() })
+      .eq('user_id', userId);
+    if (error) throw error;
+    return true;
+  },
+
   async getAllProfessionals(): Promise<any[]> {
     try {
       const { data, error } = await supabase
@@ -137,7 +147,7 @@ export const dataService = {
           id,
           full_name,
           role,
-          professional_profiles (
+          professional_profiles!inner (
             category,
             status,
             aptitude_score,
@@ -148,20 +158,24 @@ export const dataService = {
       
       if (error || !data) return [];
       
-      return data.map((d: any) => ({
-        id: d.id,
-        name: d.full_name || 'Birdie Pro',
-        category: d.professional_profiles?.[0]?.category || 'General',
-        score: d.professional_profiles?.[0]?.aptitude_score || 0,
-        status: (d.professional_profiles?.[0]?.status || ProfessionalStatus.PENDING) as ProfessionalStatus,
-        rating: d.professional_profiles?.[0]?.rating || 0
-      }));
+      return data.map((d: any) => {
+        const pro = d.professional_profiles?.[0] || {};
+        return {
+          id: d.id,
+          name: d.full_name || 'Birdie Pro',
+          category: pro.category || 'Driver',
+          score: pro.aptitude_score || 0,
+          status: (pro.status || ProfessionalStatus.PENDING) as ProfessionalStatus,
+          rating: pro.rating || 0
+        };
+      });
     } catch (e) {
       console.error("DataService Error (AllPros):", e);
       return [];
     }
   },
 
+  // WALLETS & TRANSACTIONS
   async getWallet(userId: string): Promise<Wallet | null> {
     try {
       const { data, error } = await supabase
@@ -214,6 +228,7 @@ export const dataService = {
     }
   },
 
+  // HIRE REQUESTS
   async getHireRequests(userId: string, role: 'CLIENT' | 'PROFESSIONAL' | 'ADMIN'): Promise<HireRequest[]> {
     try {
       let query = supabase.from('hire_requests').select('*');
@@ -250,6 +265,15 @@ export const dataService = {
       console.error("DataService Error (Requests):", e);
       return [];
     }
+  },
+
+  async updateHireRequestStatus(requestId: string, status: RequestStatus) {
+    const { error } = await supabase
+      .from('hire_requests')
+      .update({ status: status.toLowerCase(), updated_at: new Date().toISOString() })
+      .eq('id', requestId);
+    if (error) throw error;
+    return true;
   },
 
   async getWithdrawalRequests(userId?: string): Promise<WithdrawalRequest[]> {

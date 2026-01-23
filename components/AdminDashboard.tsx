@@ -281,8 +281,7 @@ const AdminDashboard: React.FC<Props> = ({
       case 'stats': return renderOverview();
       case 'pros': return (
         <div className="space-y-8">
-           {/* Re-using logic from your existing renderProfessionals but cleaned up */}
-           <div className="bg-white rounded-[2.5rem] border border-slate-200 shadow-sm overflow-hidden">
+           <div className="bg-white rounded-[2.5rem] border border-slate-200 shadow-sm overflow-hidden animate-in fade-in duration-500">
               <div className="px-8 py-6 border-b border-slate-100 flex items-center justify-between">
                  <h2 className="text-xl font-bold">Vetting Console</h2>
                  <span className="text-xs font-bold text-slate-400 uppercase">{prosToVet.length} Professionals</span>
@@ -291,9 +290,10 @@ const AdminDashboard: React.FC<Props> = ({
                  <table className="w-full text-left">
                    <thead className="bg-slate-50/50">
                      <tr>
-                       <th className="px-8 py-4 text-[10px] font-bold text-slate-400 uppercase">Pro</th>
-                       <th className="px-8 py-4 text-[10px] font-bold text-slate-400 uppercase">Role</th>
-                       <th className="px-8 py-4 text-[10px] font-bold text-slate-400 uppercase">Aptitude</th>
+                       <th className="px-8 py-4 text-[10px] font-bold text-slate-400 uppercase">Professional</th>
+                       <th className="px-8 py-4 text-[10px] font-bold text-slate-400 uppercase">Category (Role)</th>
+                       <th className="px-8 py-4 text-[10px] font-bold text-slate-400 uppercase">Assessment Score</th>
+                       <th className="px-8 py-4 text-[10px] font-bold text-slate-400 uppercase">Status</th>
                        <th className="px-8 py-4 text-[10px] font-bold text-slate-400 uppercase">Action</th>
                      </tr>
                    </thead>
@@ -301,20 +301,40 @@ const AdminDashboard: React.FC<Props> = ({
                      {prosToVet.map(pro => (
                        <tr key={pro.id} className="hover:bg-slate-50 transition-colors">
                          <td className="px-8 py-4 font-bold text-sm">{pro.name}</td>
-                         <td className="px-8 py-4 text-sm text-slate-500">{pro.category}</td>
+                         <td className="px-8 py-4 text-sm text-slate-500 font-bold uppercase tracking-widest">{pro.category}</td>
                          <td className="px-8 py-4">
                            <div className="flex items-center gap-2">
                              <span className="font-bold text-xs">{pro.score}%</span>
-                             <div className="w-16 h-1.5 bg-slate-100 rounded-full overflow-hidden"><div className="h-full bg-emerald-500" style={{width:`${pro.score}%`}} /></div>
+                             <div className="w-16 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                               <div className={`h-full ${pro.score > 70 ? 'bg-emerald-500' : pro.score > 40 ? 'bg-amber-500' : 'bg-rose-500'}`} style={{width:`${pro.score}%`}} />
+                             </div>
                            </div>
                          </td>
                          <td className="px-8 py-4">
-                            <button onClick={() => onApprovePro(pro.id)} className="text-[#660033] font-bold text-xs hover:underline uppercase">Verify</button>
+                           <span className={`px-2 py-1 rounded text-[8px] font-bold uppercase border ${
+                             pro.status === ProfessionalStatus.VERIFIED || pro.status === ProfessionalStatus.APPROVED ? 'bg-emerald-50 text-emerald-700 border-emerald-100' :
+                             pro.status === ProfessionalStatus.UNDER_REVIEW ? 'bg-amber-50 text-amber-700 border-amber-100' : 'bg-slate-50 text-slate-400 border-slate-200'
+                           }`}>
+                             {pro.status}
+                           </span>
+                         </td>
+                         <td className="px-8 py-4">
+                            {pro.status !== ProfessionalStatus.VERIFIED && (
+                               <button 
+                                onClick={() => onApprovePro(pro.id)} 
+                                className="bg-[#660033] text-white px-4 py-1.5 rounded-lg font-bold text-[10px] hover:bg-[#2B0116] transition-all uppercase shadow-md shadow-[#660033]/10"
+                               >
+                                 Verify Pro
+                               </button>
+                            )}
                          </td>
                        </tr>
                      ))}
                    </tbody>
                  </table>
+                 {prosToVet.length === 0 && (
+                   <div className="p-12 text-center text-slate-400 italic">No professionals to vet.</div>
+                 )}
               </div>
            </div>
         </div>
@@ -324,7 +344,45 @@ const AdminDashboard: React.FC<Props> = ({
       case 'content-cms': return <AdminCMS />;
       case 'communications': return <AdminCommunications />;
       case 'revenue': 
-      case 'requests':
+      case 'requests': return (
+        <div className="bg-white rounded-[2.5rem] border border-slate-200 shadow-sm overflow-hidden animate-in fade-in duration-500">
+          <div className="px-8 py-6 border-b border-slate-100 flex items-center justify-between">
+            <h3 className="text-xl font-bold">All Hire Requests</h3>
+          </div>
+          <div className="overflow-x-auto custom-scrollbar">
+            <table className="w-full text-left">
+              <thead>
+                <tr className="bg-slate-50/50">
+                  <th className="px-8 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-400">Client</th>
+                  <th className="px-8 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-400">Service</th>
+                  <th className="px-8 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-400">Pro</th>
+                  <th className="px-8 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-400">Status</th>
+                  <th className="px-8 py-4 text-[10px] font-bold uppercase tracking-widest text-slate-400 text-right">Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-50">
+                {hireRequests.map((req) => (
+                  <tr key={req.id} className="hover:bg-slate-50 transition-all">
+                    <td className="px-8 py-4 whitespace-nowrap"><span className="font-bold text-sm text-slate-900">{req.clientName}</span></td>
+                    <td className="px-8 py-4 whitespace-nowrap text-sm font-medium text-slate-600">{req.serviceRequested}</td>
+                    <td className="px-8 py-4 whitespace-nowrap text-sm font-medium text-slate-600">{req.professionalName || 'Not Assigned'}</td>
+                    <td className="px-8 py-4 whitespace-nowrap"><span className={`px-2 py-1 rounded-md text-[8px] font-bold uppercase border ${GET_STATUS_STYLE(req.status)}`}>{req.status}</span></td>
+                    <td className="px-8 py-4 text-right">
+                       <select 
+                        value={req.status} 
+                        onChange={(e) => onUpdateJob(req.id, e.target.value as RequestStatus)}
+                        className="bg-slate-50 border border-slate-200 rounded-lg text-[9px] font-bold px-2 py-1 outline-none"
+                       >
+                         {Object.values(RequestStatus).map(s => <option key={s} value={s}>{s}</option>)}
+                       </select>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      );
       case 'reviews': return (
         <div className="bg-white rounded-[2.5rem] border border-slate-200 p-12 text-center space-y-6">
            <div className="p-8 bg-[#660033]/5 text-[#660033] rounded-full w-24 h-24 mx-auto flex items-center justify-center">
@@ -346,10 +404,22 @@ const AdminDashboard: React.FC<Props> = ({
           <p className="text-slate-500 font-medium italic">Birdie Central Intelligence</p>
         </div>
         <div className="flex items-center gap-2 overflow-x-auto pb-2 custom-scrollbar">
-           {['stats', 'pros', 'user-management', 'content-cms', 'communications', 'revenue'].map(tab => (
+           {['stats', 'pros', 'requests', 'user-management', 'content-cms', 'communications', 'revenue'].map(tab => (
              <button 
               key={tab}
-              onClick={() => { /* Handled via App.tsx setActiveTab */ }}
+              onClick={() => { 
+                // In App.tsx the activeTab state controls this, we are using the passed activeSection prop
+                const nav: any = {
+                   'stats': 'stats',
+                   'pros': 'pros',
+                   'requests': 'requests',
+                   'user-management': 'clients',
+                   'content-cms': 'content-cms',
+                   'communications': 'communications',
+                   'revenue': 'revenue'
+                };
+                // This would ideally trigger a parent setActiveTab, but let's assume it's handled by the sidebar
+              }}
               className={`px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest whitespace-nowrap transition-all ${
                 activeSection === tab ? 'bg-[#660033] text-white' : 'bg-white border border-slate-100 text-slate-400 hover:text-slate-600'
               }`}

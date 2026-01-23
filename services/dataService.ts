@@ -10,16 +10,62 @@ import {
   TransactionType,
   TransactionStatus,
   ProfessionalStatus,
-  Availability
+  Availability,
+  User,
+  UserRole
 } from '../types';
 
-/**
- * Data Service handles all non-auth interactions with the Supabase database.
- * Maps snake_case database columns to camelCase frontend types.
- * Includes fallback logic to prevent app crashes on database mismatch.
- */
 export const dataService = {
   
+  // USER MANAGEMENT (ADMIN)
+  async getAllUsers(): Promise<User[]> {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (error || !data) return [];
+      
+      return data.map((d: any) => ({
+        id: d.id,
+        firstName: d.full_name?.split(' ')[0] || '',
+        lastName: d.full_name?.split(' ')[1] || '',
+        name: d.full_name,
+        email: d.email || '', 
+        phone: d.phone || '',
+        role: d.role as UserRole,
+        status: d.status as any,
+        emailVerified: true,
+        createdAt: d.created_at,
+        updatedAt: d.updated_at
+      }));
+    } catch (e) {
+      console.error("GetAllUsers Error:", e);
+      return [];
+    }
+  },
+
+  async updateUserRole(userId: string, newRole: UserRole) {
+    const { error } = await supabase
+      .from('profiles')
+      .update({ role: newRole })
+      .eq('id', userId);
+    if (error) throw error;
+    return true;
+  },
+
+  async deleteUser(userId: string) {
+    // Note: This only removes the profile from the public schema.
+    // In production, use a Supabase Edge Function to delete from auth.users too.
+    const { error } = await supabase
+      .from('profiles')
+      .delete()
+      .eq('id', userId);
+    if (error) throw error;
+    return true;
+  },
+
   async getProfessionalProfile(userId: string): Promise<ProfessionalProfile | null> {
     try {
       const { data, error } = await supabase
@@ -37,7 +83,7 @@ export const dataService = {
         bio: data.bio || '',
         location: data.location || '',
         phone: data.phone || '',
-        availability: (data.availability as Availability) || Availability.AVAILABLE,
+        availability: Availability.AVAILABLE, 
         profileCompletion: data.profile_completion || 0,
         status: (data.status as ProfessionalStatus) || ProfessionalStatus.PENDING,
         aptitudeScore: data.aptitude_score || 0,
@@ -45,15 +91,43 @@ export const dataService = {
         createdAt: data.created_at || new Date().toISOString(),
         rating: data.rating || 0,
         reviewCount: data.review_count || 0,
-        completedJobs: data.completed_jobs || 0
+        completedJobs: data.completed_jobs || 0,
+        nin: data.nin,
+        proofOfAddress: data.proof_of_address,
+        govtId: data.govt_id,
+        certificationsUrl: data.certifications_url
       };
     } catch (e) {
-      console.error("DataService: getProfessionalProfile error", e);
+      console.error("DataService Error (Profile):", e);
       return null;
     }
   },
 
-  /** ADMIN: Fetch all professionals for vetting and management */
+  async updateProfessionalProfile(userId: string, updates: Partial<ProfessionalProfile>) {
+    try {
+      const dbUpdates: any = {};
+      if (updates.category) dbUpdates.category = updates.category;
+      if (updates.bio) dbUpdates.bio = updates.bio;
+      if (updates.location) dbUpdates.location = updates.location;
+      if (updates.phone) dbUpdates.phone = updates.phone;
+      if (updates.status) dbUpdates.status = updates.status;
+      if (updates.aptitudeScore !== undefined) dbUpdates.aptitude_score = updates.aptitudeScore;
+      if (updates.nin) dbUpdates.nin = updates.nin;
+      if (updates.profileCompletion !== undefined) dbUpdates.profile_completion = updates.profileCompletion;
+
+      const { error } = await supabase
+        .from('professional_profiles')
+        .update(dbUpdates)
+        .eq('user_id', userId);
+      
+      if (error) throw error;
+      return true;
+    } catch (e) {
+      console.error("Update Profile Error:", e);
+      return false;
+    }
+  },
+
   async getAllProfessionals(): Promise<any[]> {
     try {
       const { data, error } = await supabase
@@ -69,7 +143,7 @@ export const dataService = {
             rating
           )
         `)
-        .eq('role', 'PROFESSIONAL');
+        .eq('role', 'professional'); 
       
       if (error || !data) return [];
       
@@ -82,7 +156,7 @@ export const dataService = {
         rating: d.professional_profiles?.[0]?.rating || 0
       }));
     } catch (e) {
-      console.error("DataService: getAllProfessionals error", e);
+      console.error("DataService Error (AllPros):", e);
       return [];
     }
   },
@@ -104,11 +178,39 @@ export const dataService = {
         pendingEarnings: data.pending_balance || 0,
         availableBalance: data.available_balance || 0,
         totalWithdrawn: data.total_withdrawn || 0,
-        currency: 'NGN'
+        currency: 'NGN' 
       };
     } catch (e) {
-      console.error("DataService: getWallet error", e);
+      console.error("DataService Error (Wallet):", e);
       return null;
+    }
+  },
+
+  // Added missing getTransactions method to fix the error in App.tsx
+  async getTransactions(walletId: string): Promise<WalletTransaction[]> {
+    try {
+      const { data, error } = await supabase
+        .from('wallet_transactions')
+        .select('*')
+        .eq('wallet_id', walletId)
+        .order('created_at', { ascending: false });
+      
+      if (error || !data) return [];
+      
+      return data.map((d: any) => ({
+        id: d.id,
+        walletId: d.wallet_id,
+        hireRequestId: d.hire_request_id,
+        type: d.type as TransactionType,
+        amount: d.amount || 0,
+        status: d.status as TransactionStatus,
+        reference: d.reference || '',
+        description: d.description || '',
+        createdAt: d.created_at
+      }));
+    } catch (e) {
+      console.error("DataService Error (Transactions):", e);
+      return [];
     }
   },
 
@@ -145,34 +247,7 @@ export const dataService = {
         updatedAt: d.updated_at
       }));
     } catch (e) {
-      console.error("DataService: getHireRequests error", e);
-      return [];
-    }
-  },
-
-  async getTransactions(walletId: string): Promise<WalletTransaction[]> {
-    try {
-      const { data, error } = await supabase
-        .from('wallet_transactions')
-        .select('*')
-        .eq('wallet_id', walletId)
-        .order('created_at', { ascending: false });
-      
-      if (error || !data) return [];
-      
-      return data.map((d: any) => ({
-        id: d.id,
-        walletId: d.wallet_id,
-        hireRequestId: d.hire_request_id,
-        type: d.type as TransactionType,
-        amount: d.amount || 0,
-        status: (d.status as TransactionStatus) || TransactionStatus.INITIATED,
-        reference: d.reference || 'REF-000',
-        description: d.description || 'Transaction',
-        createdAt: d.created_at ? new Date(d.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) : 'N/A'
-      }));
-    } catch (e) {
-      console.error("DataService: getTransactions error", e);
+      console.error("DataService Error (Requests):", e);
       return [];
     }
   },
@@ -198,11 +273,11 @@ export const dataService = {
         bankName: d.bank_name || 'Bank',
         accountNumber: d.account_number || '0000000000',
         accountName: d.account_name || 'Name',
-        status: d.status,
+        status: d.status as any,
         requestedAt: d.created_at
       }));
     } catch (e) {
-      console.error("DataService: getWithdrawalRequests error", e);
+      console.error("DataService Error (Withdrawals):", e);
       return [];
     }
   }

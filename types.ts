@@ -1,81 +1,81 @@
 
 export enum UserRole {
-  CLIENT = 'CLIENT',
-  PROFESSIONAL = 'PROFESSIONAL',
-  ADMIN = 'ADMIN',
-  OPERATIONS = 'OPERATIONS'
+  CLIENT = 'client',
+  PROFESSIONAL = 'professional',
+  ADMIN = 'admin',
+  OPERATIONS = 'operations'
 }
 
 export enum UserStatus {
-  ACTIVE = 'ACTIVE',
-  PENDING = 'PENDING',
-  SUSPENDED = 'SUSPENDED'
+  ACTIVE = 'active',
+  PENDING = 'pending',
+  SUSPENDED = 'suspended'
 }
 
 export enum ProfessionalStatus {
-  PENDING = 'PENDING',
-  APPROVED = 'APPROVED',
-  REJECTED = 'REJECTED',
-  VERIFIED = 'VERIFIED',
-  UNDER_REVIEW = 'UNDER_REVIEW',
-  SUSPENDED = 'SUSPENDED'
+  PENDING = 'pending',
+  APPROVED = 'approved',
+  REJECTED = 'rejected',
+  VERIFIED = 'verified',
+  UNDER_REVIEW = 'under_review',
+  SUSPENDED = 'suspended'
 }
 
 export enum RequestStatus {
-  PENDING = 'PENDING',
-  ASSIGNED = 'ASSIGNED',
-  ACCEPTED = 'ACCEPTED',
-  REJECTED = 'REJECTED',
-  COMPLETED = 'COMPLETED',
-  CANCELLED = 'CANCELLED',
-  ACTIVE = 'ACTIVE',
-  DISPUTED = 'DISPUTED'
+  PENDING = 'pending',
+  ASSIGNED = 'assigned',
+  ACCEPTED = 'accepted',
+  REJECTED = 'rejected',
+  COMPLETED = 'completed',
+  CANCELLED = 'cancelled',
+  ACTIVE = 'active',
+  DISPUTED = 'disputed'
 }
 
 export enum Availability {
-  AVAILABLE = 'AVAILABLE',
-  BUSY = 'BUSY',
-  UNAVAILABLE = 'UNAVAILABLE',
-  ON_JOB = 'ON_JOB'
+  AVAILABLE = 'available',
+  BUSY = 'busy',
+  UNAVAILABLE = 'unavailable',
+  ON_JOB = 'on_job'
 }
 
 export type AvailabilityStatus = Availability;
 
 export enum PaymentType {
-  CONSULTATION = 'CONSULTATION',
-  PLACEMENT = 'PLACEMENT',
-  SERVICE_FEE = 'SERVICE_FEE'
+  CONSULTATION = 'consultation',
+  PLACEMENT = 'placement',
+  SERVICE_FEE = 'service_fee'
 }
 
 export enum TransactionType {
-  ESCROW_CREDIT = 'ESCROW_CREDIT',
-  ESCROW_DEBIT = 'ESCROW_DEBIT',
-  PENDING_CREDIT = 'PENDING_CREDIT',
-  PENDING_DEBIT = 'PENDING_DEBIT',
-  AVAILABLE_CREDIT = 'AVAILABLE_CREDIT',
-  AVAILABLE_DEBIT = 'AVAILABLE_DEBIT',
-  COMMISSION_DEBIT = 'COMMISSION_DEBIT',
-  WITHDRAWAL_DEBIT = 'WITHDRAWAL_DEBIT',
-  REFUND_DEBIT = 'REFUND_DEBIT'
+  ESCROW_CREDIT = 'escrow_credit',
+  ESCROW_DEBIT = 'escrow_debit',
+  PENDING_CREDIT = 'pending_credit',
+  PENDING_DEBIT = 'pending_debit',
+  AVAILABLE_CREDIT = 'available_credit',
+  AVAILABLE_DEBIT = 'available_debit',
+  COMMISSION_DEBIT = 'commission_debit',
+  WITHDRAWAL_DEBIT = 'withdrawal_debit',
+  REFUND_DEBIT = 'refund_debit'
 }
 
 export enum TransactionStatus {
-  INITIATED = 'INITIATED',
-  PAID = 'PAID',
-  IN_ESCROW = 'IN_ESCROW',
-  PENDING_RELEASE = 'PENDING_RELEASE',
-  RELEASED = 'RELEASED',
-  SUCCESSFUL = 'SUCCESSFUL',
-  FAILED = 'FAILED',
-  REFUNDED = 'REFUNDED'
+  INITIATED = 'initiated',
+  PAID = 'paid',
+  IN_ESCROW = 'in_escrow',
+  PENDING_RELEASE = 'pending_release',
+  RELEASED = 'released',
+  SUCCESSFUL = 'successful',
+  FAILED = 'failed',
+  REFUNDED = 'refunded'
 }
 
 export enum WithdrawalStatus {
-  REQUESTED = 'REQUESTED',
-  UNDER_REVIEW = 'UNDER_REVIEW',
-  APPROVED = 'APPROVED',
-  PAID = 'PAID',
-  REJECTED = 'REJECTED'
+  REQUESTED = 'requested',
+  UNDER_REVIEW = 'under_review',
+  APPROVED = 'approved',
+  PAID = 'paid',
+  REJECTED = 'rejected'
 }
 
 export interface Wallet {
@@ -137,10 +137,8 @@ export interface ProfessionalProfile {
   serviceCategory?: string;
   bio: string;
   location: string;
-  // Added phone property to resolve type errors in views and onboarding flows
   phone?: string;
   availability: Availability;
-  availabilityStatus?: Availability;
   profileCompletion: number;
   status: ProfessionalStatus;
   verificationStatus?: ProfessionalStatus;
@@ -152,6 +150,11 @@ export interface ProfessionalProfile {
   rating: number;
   reviewCount: number;
   completedJobs: number;
+  // Identification Fields
+  nin?: string;
+  proofOfAddress?: string; // URL to file
+  govtId?: string; // URL to file
+  certificationsUrl?: string; // URL to file
 }
 
 export interface HireRequest {

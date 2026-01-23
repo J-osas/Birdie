@@ -67,7 +67,8 @@ const SettingsView: React.FC<Props> = ({ user, availability, onToggleAvailabilit
             </div>
           </div>
           <div className="bg-slate-50 p-2 rounded-2xl border border-slate-100 flex gap-1">
-             {(['AVAILABLE', 'UNAVAILABLE'] as Availability[]).map(val => (
+             {/* Fixed: Use Availability enum members directly instead of incorrectly cased strings */}
+             {([Availability.AVAILABLE, Availability.UNAVAILABLE]).map(val => (
                <button 
                  key={val}
                  onClick={() => onToggleAvailability(val)}

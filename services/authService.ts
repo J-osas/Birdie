@@ -1,32 +1,76 @@
 
 import { supabase } from '../lib/supabase';
-import { UserRole } from '../types';
+import { UserRole, ProfessionalStatus, Availability, UserStatus } from '../types';
 
 export const authService = {
   /**
    * Signup Flow:
-   * Passes first_name, last_name, and role into user_metadata.
-   * The database trigger 'handle_new_user' listens for this and creates the public.profiles record.
+   * 1. Creates Supabase auth user
+   * 2. Inserts row into public.profiles
+   * 3. If professional, inserts into professional_profiles and wallets
    */
   async signUp(email: string, pass: string, firstName: string, lastName: string, role: UserRole) {
+    const fullName = `${firstName} ${lastName}`;
+    
+    // 1. Auth Signup
     const { data: authData, error: authError } = await supabase.auth.signUp({
       email,
       password: pass,
       options: {
         data: { 
-          first_name: firstName, 
-          last_name: lastName, 
-          role: role 
+          full_name: fullName,
+          role: role
         }
       }
     });
 
-    if (authError) {
-      // If the error is the common trigger failure, provide a clearer message
-      if (authError.message.includes('Database error saving new user')) {
-        throw new Error('Our profile system is syncing. Please try again in a few seconds or contact support.');
-      }
-      throw authError;
+    if (authError) throw authError;
+    if (!authData.user) throw new Error("User creation failed.");
+
+    const userId = authData.user.id;
+
+    // 2. Insert Profile
+    const { error: profileError } = await supabase
+      .from('profiles')
+      .insert({
+        id: userId,
+        full_name: fullName,
+        role: role.toLowerCase(),
+        status: UserStatus.ACTIVE
+      });
+
+    if (profileError) console.error("Profile creation error:", profileError);
+
+    // 3. Conditional Professional Setup
+    if (role === UserRole.PROFESSIONAL) {
+      // Create Professional Profile with extra id fields
+      const { error: proError } = await supabase
+        .from('professional_profiles')
+        .insert({
+          user_id: userId,
+          category: 'Driver',
+          status: ProfessionalStatus.PENDING,
+          profile_completion: 0,
+          nin: '',
+          proof_of_address: '',
+          govt_id: '',
+          certifications_url: ''
+        });
+      
+      if (proError) console.error("Pro profile error:", proError);
+
+      // Create Wallet
+      const { error: walletError } = await supabase
+        .from('wallets')
+        .insert({
+          professional_id: userId,
+          escrow_balance: 0,
+          pending_balance: 0,
+          available_balance: 0,
+          total_withdrawn: 0
+        });
+      
+      if (walletError) console.error("Wallet error:", walletError);
     }
     
     return authData.user;
@@ -37,7 +81,12 @@ export const authService = {
       email,
       password: pass
     });
-    if (error) throw error;
+    if (error) {
+      if (error.message === 'Failed to fetch') {
+        throw new Error("Unable to reach the server. Please check your internet or if the database is active.");
+      }
+      throw error;
+    }
     return data.user;
   },
 
@@ -46,17 +95,14 @@ export const authService = {
     if (error) throw error;
   },
 
-  async getCurrentProfile() {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return null;
-
-    const { data: profile, error } = await supabase
+  async getProfile(userId: string) {
+    const { data, error } = await supabase
       .from('profiles')
       .select('*')
-      .eq('id', user.id)
+      .eq('id', userId)
       .maybeSingle();
-
+    
     if (error) throw error;
-    return { ...user, ...profile };
+    return data;
   }
 };

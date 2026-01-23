@@ -15,6 +15,13 @@ export const COLORS = {
 
 export const CATEGORIES = ['Security', 'Nanny', 'House Help', 'Gardener', 'Driver', 'Chef'];
 
+export const LAGOS_LOCATIONS = [
+  "Agege", "Ajegunle", "Akodo", "Apapa", "Badagry", "Egbeda", "Ebute Ikorodu", 
+  "Ebute-Metta", "Ejirin", "Epe", "Festac Town", "Ifako", "Ikeja", "Ikorodu", 
+  "Ikotun", "Ikoyi", "Ipaja", "Iyana Ipaja", "Lagos", "Makoko", "Mushin", 
+  "Ojota", "Oshodi", "Somolu", "Surulere", "Victoria Garden City", "Victoria Island", "Yaba"
+];
+
 // Helper for status styles using light theme backgrounds
 export const GET_STATUS_STYLE = (status: string) => {
   switch(status) {

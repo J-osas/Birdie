@@ -6,7 +6,7 @@ export const authService = {
   /**
    * Signup Flow:
    * 1. Creates Supabase auth user
-   * 2. Inserts row into public.profiles
+   * 2. Inserts row into public.profiles (including email now)
    * 3. If professional, inserts into professional_profiles and wallets
    */
   async signUp(email: string, pass: string, firstName: string, lastName: string, role: UserRole) {
@@ -29,12 +29,13 @@ export const authService = {
 
     const userId = authData.user.id;
 
-    // 2. Insert Profile
+    // 2. Insert Profile - Added email field here
     const { error: profileError } = await supabase
       .from('profiles')
       .insert({
         id: userId,
         full_name: fullName,
+        email: email, // Persisting email to public schema
         role: role.toLowerCase(),
         status: UserStatus.ACTIVE
       });

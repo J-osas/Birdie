@@ -12,7 +12,8 @@ import {
   ProfessionalStatus,
   Availability,
   User,
-  UserRole
+  UserRole,
+  UserStatus
 } from '../types';
 
 export const dataService = {
@@ -34,11 +35,11 @@ export const dataService = {
         name: d.full_name,
         email: d.email || '', 
         phone: d.phone || '',
-        role: d.role as UserRole,
-        status: d.status as any,
+        role: (d.role?.toLowerCase() || 'client') as UserRole,
+        status: (d.status?.toLowerCase() || 'active') as UserStatus,
         emailVerified: true,
-        createdAt: d.created_at,
-        updatedAt: d.updated_at
+        createdAt: d.created_at || new Date().toISOString(),
+        updatedAt: d.updated_at || d.created_at || new Date().toISOString()
       }));
     } catch (e) {
       console.error("GetAllUsers Error:", e);
@@ -49,15 +50,13 @@ export const dataService = {
   async updateUserRole(userId: string, newRole: UserRole) {
     const { error } = await supabase
       .from('profiles')
-      .update({ role: newRole })
+      .update({ role: newRole.toLowerCase(), updated_at: new Date().toISOString() })
       .eq('id', userId);
     if (error) throw error;
     return true;
   },
 
   async deleteUser(userId: string) {
-    // Note: This only removes the profile from the public schema.
-    // In production, use a Supabase Edge Function to delete from auth.users too.
     const { error } = await supabase
       .from('profiles')
       .delete()
@@ -83,7 +82,7 @@ export const dataService = {
         bio: data.bio || '',
         location: data.location || '',
         phone: data.phone || '',
-        availability: Availability.AVAILABLE, 
+        availability: (data.availability || Availability.AVAILABLE) as Availability, 
         profileCompletion: data.profile_completion || 0,
         status: (data.status as ProfessionalStatus) || ProfessionalStatus.PENDING,
         aptitudeScore: data.aptitude_score || 0,
@@ -105,7 +104,9 @@ export const dataService = {
 
   async updateProfessionalProfile(userId: string, updates: Partial<ProfessionalProfile>) {
     try {
-      const dbUpdates: any = {};
+      const dbUpdates: any = {
+        updated_at: new Date().toISOString()
+      };
       if (updates.category) dbUpdates.category = updates.category;
       if (updates.bio) dbUpdates.bio = updates.bio;
       if (updates.location) dbUpdates.location = updates.location;
@@ -152,7 +153,7 @@ export const dataService = {
         name: d.full_name || 'Birdie Pro',
         category: d.professional_profiles?.[0]?.category || 'General',
         score: d.professional_profiles?.[0]?.aptitude_score || 0,
-        status: d.professional_profiles?.[0]?.status || ProfessionalStatus.PENDING,
+        status: (d.professional_profiles?.[0]?.status || ProfessionalStatus.PENDING) as ProfessionalStatus,
         rating: d.professional_profiles?.[0]?.rating || 0
       }));
     } catch (e) {
@@ -186,7 +187,6 @@ export const dataService = {
     }
   },
 
-  // Added missing getTransactions method to fix the error in App.tsx
   async getTransactions(walletId: string): Promise<WalletTransaction[]> {
     try {
       const { data, error } = await supabase

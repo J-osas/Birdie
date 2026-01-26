@@ -1,4 +1,3 @@
-
 import { supabase } from '../lib/supabase';
 import { 
   ProfessionalProfile, 
@@ -50,7 +49,7 @@ export const dataService = {
   async updateUserRole(userId: string, newRole: UserRole) {
     const { error } = await supabase
       .from('profiles')
-      .update({ role: newRole.toLowerCase(), updated_at: new Date().toISOString() })
+      .update({ role: newRole.toLowerCase() }) // Removed updated_at as it might be missing
       .eq('id', userId);
     if (error) throw error;
     return true;
@@ -85,7 +84,7 @@ export const dataService = {
         phone: data.phone || '',
         availability: (data.availability || Availability.AVAILABLE) as Availability, 
         profileCompletion: data.profile_completion || 0,
-        status: (data.status as ProfessionalStatus) || ProfessionalStatus.PENDING,
+        status: (data.status?.toUpperCase() as ProfessionalStatus) || ProfessionalStatus.PENDING,
         aptitudeScore: data.aptitude_score || 0,
         publicVisible: data.public_visible || false,
         createdAt: data.created_at || new Date().toISOString(),
@@ -105,14 +104,12 @@ export const dataService = {
 
   async updateProfessionalProfile(userId: string, updates: Partial<ProfessionalProfile>) {
     try {
-      const dbUpdates: any = {
-        updated_at: new Date().toISOString()
-      };
+      const dbUpdates: any = {};
       if (updates.category) dbUpdates.category = updates.category;
       if (updates.bio) dbUpdates.bio = updates.bio;
       if (updates.location) dbUpdates.location = updates.location;
       if (updates.phone) dbUpdates.phone = updates.phone;
-      if (updates.status) dbUpdates.status = updates.status;
+      if (updates.status) dbUpdates.status = updates.status.toLowerCase();
       if (updates.aptitudeScore !== undefined) dbUpdates.aptitude_score = updates.aptitudeScore;
       if (updates.nin) dbUpdates.nin = updates.nin;
       if (updates.profileCompletion !== undefined) dbUpdates.profile_completion = updates.profileCompletion;
@@ -132,12 +129,13 @@ export const dataService = {
 
   async updateProfessionalStatus(userId: string, status: ProfessionalStatus) {
     const isVerified = status === ProfessionalStatus.VERIFIED || status === ProfessionalStatus.APPROVED;
+    // Map internal status to lowercase for DB compatibility. 
+    // Removed updated_at because schema check showed it doesn't exist on this table.
     const { error } = await supabase
       .from('professional_profiles')
       .update({ 
         status: status.toLowerCase(), 
-        public_visible: isVerified,
-        updated_at: new Date().toISOString() 
+        public_visible: isVerified
       })
       .eq('user_id', userId);
     
@@ -153,7 +151,7 @@ export const dataService = {
           id,
           full_name,
           role,
-          professional_profiles!inner (
+          professional_profiles (
             category,
             status,
             aptitude_score,
@@ -166,15 +164,18 @@ export const dataService = {
       if (error || !data) return [];
       
       return data.map((d: any) => {
-        const pro = d.professional_profiles?.[0] || {};
+        // Correctly handle the joined array from Supabase
+        const pro = Array.isArray(d.professional_profiles) ? d.professional_profiles[0] : d.professional_profiles;
+        const safePro = pro || {};
+        
         return {
-          id: d.id,
+          id: d.id, // This is the user_id
           name: d.full_name || 'Birdie Pro',
-          category: pro.category || 'Driver',
-          score: pro.aptitude_score || 0,
-          status: (pro.status || ProfessionalStatus.PENDING) as ProfessionalStatus,
-          rating: pro.rating || 0,
-          bio: pro.bio || ''
+          category: safePro.category || 'Driver',
+          score: safePro.aptitude_score || 0,
+          status: (safePro.status?.toUpperCase() || ProfessionalStatus.PENDING) as ProfessionalStatus,
+          rating: safePro.rating || 0,
+          bio: safePro.bio || ''
         };
       });
     } catch (e) {
@@ -185,6 +186,7 @@ export const dataService = {
 
   async getPublicProfessionals(): Promise<any[]> {
     try {
+      // Adjusted query to remove 'availability' if it's missing from schema
       const { data, error } = await supabase
         .from('profiles')
         .select(`
@@ -198,26 +200,31 @@ export const dataService = {
             rating,
             bio,
             location,
-            availability
+            public_visible
           )
         `)
+        .eq('role', 'professional')
         .eq('professional_profiles.public_visible', true)
         .eq('professional_profiles.status', 'verified');
       
-      if (error || !data) return [];
+      if (error || !data) {
+        console.log("No public pros found or error:", error);
+        return [];
+      }
       
       return data.map((d: any) => {
-        const pro = d.professional_profiles?.[0] || {};
+        const pro = Array.isArray(d.professional_profiles) ? d.professional_profiles[0] : d.professional_profiles;
+        const safePro = pro || {};
         return {
           id: d.id,
           userId: d.full_name || 'Birdie Pro',
-          category: pro.category || 'Driver',
-          location: pro.location || 'Lagos',
-          rating: pro.rating || 0,
-          availability: (pro.availability || Availability.AVAILABLE) as Availability,
-          status: (pro.status || ProfessionalStatus.VERIFIED) as ProfessionalStatus,
-          aptitudeScore: pro.aptitude_score || 0,
-          bio: pro.bio || '',
+          category: safePro.category || 'Driver',
+          location: safePro.location || 'Lagos',
+          rating: safePro.rating || 0,
+          availability: Availability.AVAILABLE, // Default if column missing
+          status: (safePro.status?.toUpperCase() || ProfessionalStatus.VERIFIED) as ProfessionalStatus,
+          aptitudeScore: safePro.aptitude_score || 0,
+          bio: safePro.bio || '',
           reviewCount: 0,
           completedJobs: 0
         };
@@ -304,7 +311,7 @@ export const dataService = {
         professionalName: d.professional_name || 'Unassigned',
         serviceCategory: d.service_category || 'General',
         serviceRequested: d.service_requested || 'Domestic Support',
-        status: (d.status as RequestStatus) || RequestStatus.PENDING,
+        status: (d.status?.toUpperCase() as RequestStatus) || RequestStatus.PENDING,
         preferredStartDate: d.preferred_start_date || new Date().toISOString(),
         requestedDate: d.requested_date || new Date().toISOString().split('T')[0],
         submissionDate: d.created_at ? d.created_at.split('T')[0] : 'N/A',
@@ -323,7 +330,7 @@ export const dataService = {
   async updateHireRequestStatus(requestId: string, status: RequestStatus) {
     const { error } = await supabase
       .from('hire_requests')
-      .update({ status: status.toLowerCase(), updated_at: new Date().toISOString() })
+      .update({ status: status.toLowerCase() })
       .eq('id', requestId);
     if (error) throw error;
     return true;
@@ -350,7 +357,7 @@ export const dataService = {
         bankName: d.bank_name || 'Bank',
         accountNumber: d.account_number || '0000000000',
         accountName: d.account_name || 'Name',
-        status: d.status as any,
+        status: d.status?.toUpperCase() as any,
         requestedAt: d.created_at
       }));
     } catch (e) {

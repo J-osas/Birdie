@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { 
   UserRole, 
@@ -97,7 +96,7 @@ const App: React.FC = () => {
     try {
       setAuthStatus("loading");
       
-      // Load Public Data first (for unauthenticated users or those browsing)
+      // Load Public Data
       const pPros = await dataService.getPublicProfessionals();
       setPublicPros(pPros);
 
@@ -105,17 +104,17 @@ const App: React.FC = () => {
       if (!session) { setAuthStatus("unauthenticated"); return; }
       
       const dbProfile = await authService.getProfile(session.user.id);
-      if (!dbProfile) { setAuthStatus("loading"); return; }
+      if (!dbProfile) { setAuthStatus("unauthenticated"); return; }
 
       const user: User = {
         id: dbProfile.id,
         firstName: dbProfile.full_name?.split(' ')[0] || 'User',
         lastName: dbProfile.full_name?.split(' ')[1] || '',
         name: dbProfile.full_name,
-        email: session.user.email || '', 
+        email: dbProfile.email || session.user.email || '', 
         phone: dbProfile.phone || '',
-        role: dbProfile.role as UserRole,
-        status: dbProfile.status as UserStatus,
+        role: (dbProfile.role?.toLowerCase() || 'client') as UserRole,
+        status: (dbProfile.status?.toLowerCase() || 'active') as UserStatus,
         emailVerified: true,
         createdAt: dbProfile.created_at,
         updatedAt: new Date().toISOString()
@@ -151,11 +150,7 @@ const App: React.FC = () => {
       setAuthStatus("authenticated");
     } catch (err: any) {
       console.error("Hydration Error:", err);
-      if (err.message?.includes('Failed to fetch')) {
-        setAppError("Connectivity error. Please check your internet or Supabase project status.");
-      } else {
-        setAuthStatus("unauthenticated");
-      }
+      setAuthStatus("unauthenticated");
     }
   }, []);
 
@@ -180,6 +175,7 @@ const App: React.FC = () => {
       if (success) {
         const updatedPro = await dataService.getProfessionalProfile(currentUser.id);
         if (updatedPro) setProProfile(updatedPro);
+        alert("Assessment submitted. Your profile is now under review.");
       }
     } catch (e) {
       console.error("Onboarding Sync Error:", e);
@@ -189,6 +185,7 @@ const App: React.FC = () => {
   const handleApprovePro = async (userId: string) => {
     try {
       await dataService.updateProfessionalStatus(userId, ProfessionalStatus.VERIFIED);
+      // Immediately refresh lists
       const [allPros, pPros] = await Promise.all([
         dataService.getAllProfessionals(),
         dataService.getPublicProfessionals()
@@ -222,7 +219,11 @@ const App: React.FC = () => {
 
   const handleRegister = async (email: string, pass: string, fName: string, lName: string, role: UserRole) => {
     setAuthError(null);
-    try { await authService.signUp(email, pass, fName, lName, role); setPublicView('home'); }
+    try { 
+      await authService.signUp(email, pass, fName, lName, role); 
+      setPublicView('home'); 
+      alert("Registration successful! Check email for verification.");
+    }
     catch (err: any) { setAuthError(err.message || 'Registration failed'); throw err; }
   };
 
@@ -242,7 +243,7 @@ const App: React.FC = () => {
       <div className="min-h-screen bg-white flex flex-col items-center justify-center space-y-4">
         <div className="w-16 h-16 bg-[#660033] rounded-2xl flex items-center justify-center animate-pulse"><span className="text-white font-bold text-3xl">B</span></div>
         <div className="flex flex-col items-center gap-2">
-          <div className="flex items-center gap-2 text-[#660033] font-bold text-sm uppercase tracking-widest"><Loader2 className="animate-spin" size={16} /> Preparing your dashboard...</div>
+          <div className="flex items-center gap-2 text-[#660033] font-bold text-sm uppercase tracking-widest"><Loader2 className="animate-spin" size={16} /> Connecting to Birdie Network...</div>
         </div>
       </div>
     );
@@ -281,7 +282,29 @@ const App: React.FC = () => {
         ) : currentUser.role === UserRole.PROFESSIONAL ? (
           <ProfessionalDashboard profile={proProfile} currentUser={currentUser} requests={requests} wallet={proWallet} transactions={walletTransactions} withdrawals={withdrawalRequests} onWithdrawRequest={() => {}} notifications={notifications} reviews={reviews} userName={currentUser.name || 'User'} activeSection={activeTab} onToggleAvailability={() => {}} onViewRequest={setSelectedRequest as any} onLogout={() => authService.signOut()} />
         ) : (currentUser.role === UserRole.ADMIN || currentUser.role === UserRole.OPERATIONS) ? (
-          <AdminDashboard stats={{ totalPros: pendingPros.length, pendingApps: pendingPros.filter(p => p.status === ProfessionalStatus.PENDING || p.status === ProfessionalStatus.UNDER_REVIEW).length, activeJobs: requests.filter(r => r.status === RequestStatus.ACTIVE).length, totalClients: 0, revenue: requests.reduce((acc, curr) => acc + (curr.amount || 0), 0), platformFees: requests.reduce((acc, curr) => acc + (curr.amount || 0), 0) * 0.15, completedJobs: requests.filter(r => r.status === RequestStatus.COMPLETED).length, totalReviews: 0, avgRating: 4.6 }} prosToVet={pendingPros} hireRequests={requests} transactions={[]} payoutQueue={withdrawalRequests} onApproveWithdrawal={() => {}} reviews={[]} onApprovePro={handleApprovePro} onUpdateJob={handleUpdateJob} onUpdateReviewStatus={() => {}} activeSection={activeTab} />
+          <AdminDashboard 
+            stats={{ 
+              totalPros: pendingPros.filter(p => p.status === 'VERIFIED' || p.status === 'APPROVED').length, 
+              pendingApps: pendingPros.filter(p => p.status === 'PENDING' || p.status === 'UNDER_REVIEW').length, 
+              activeJobs: requests.filter(r => r.status === 'ACTIVE' || r.status === 'ACCEPTED').length, 
+              totalClients: 0, 
+              revenue: requests.reduce((acc, curr) => acc + (curr.amount || 0), 0), 
+              platformFees: requests.reduce((acc, curr) => acc + (curr.amount || 0), 0) * 0.15, 
+              completedJobs: requests.filter(r => r.status === 'COMPLETED').length, 
+              totalReviews: 0, 
+              avgRating: 4.6 
+            }} 
+            prosToVet={pendingPros} 
+            hireRequests={requests} 
+            transactions={[]} 
+            payoutQueue={withdrawalRequests} 
+            onApproveWithdrawal={() => {}} 
+            reviews={[]} 
+            onApprovePro={handleApprovePro} 
+            onUpdateJob={handleUpdateJob} 
+            onUpdateReviewStatus={() => {}} 
+            activeSection={activeTab} 
+          />
         ) : (
           <div className="flex-1">{renderPublicContent()}</div>
         )}

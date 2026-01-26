@@ -4,7 +4,7 @@ import { Search, MapPin, Briefcase, Star, ShieldCheck, Filter, ChevronRight, Sli
 import { CATEGORIES } from '../constants';
 import { Availability, ProfessionalStatus, ProfessionalProfile } from '../types';
 
-// Add MOCK_ARCHIVE_PROS export to resolve import error in HireFlow.tsx
+// Exported for HireFlow and other components that might need fallback data
 export const MOCK_ARCHIVE_PROS: ProfessionalProfile[] = [
   {
     id: 'p-1',
@@ -37,38 +37,6 @@ export const MOCK_ARCHIVE_PROS: ProfessionalProfile[] = [
     reviewCount: 42,
     completedJobs: 89,
     aptitudeScore: 88
-  },
-  {
-    id: 'p-3',
-    userId: 'Samuel Udoh',
-    category: 'Chef',
-    bio: 'Professional chef specializing in both local and continental dishes. Punctual and hygienic.',
-    location: 'Victoria Island, Lagos',
-    availability: Availability.AVAILABLE,
-    profileCompletion: 100,
-    status: ProfessionalStatus.VERIFIED,
-    publicVisible: true,
-    createdAt: new Date().toISOString(),
-    rating: 4.7,
-    reviewCount: 18,
-    completedJobs: 45,
-    aptitudeScore: 95
-  },
-  {
-    id: 'p-4',
-    userId: 'Grace Ibe',
-    category: 'House Help',
-    bio: 'Diligent and trustworthy house help with experience in high-paced family environments.',
-    location: 'Surulere, Lagos',
-    availability: Availability.AVAILABLE,
-    profileCompletion: 100,
-    status: ProfessionalStatus.VERIFIED,
-    publicVisible: true,
-    createdAt: new Date().toISOString(),
-    rating: 4.6,
-    reviewCount: 12,
-    completedJobs: 34,
-    aptitudeScore: 85
   }
 ];
 
@@ -84,16 +52,19 @@ const ProfessionalArchive: React.FC<Props> = ({ proList, onViewProfile, onHire }
   const [filterStatus, setFilterStatus] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
 
+  // Priority to dynamic proList from database
+  const activeList = proList && proList.length > 0 ? proList : MOCK_ARCHIVE_PROS;
+
   const filteredPros = useMemo(() => {
-    return proList.filter(pro => {
+    return activeList.filter(pro => {
       const matchCat = filterCategory === 'All' || pro.category === filterCategory;
-      const matchLoc = filterLocation === 'All' || pro.location?.includes(filterLocation);
+      const matchLoc = filterLocation === 'All' || (pro.location && pro.location.includes(filterLocation));
       const matchStatus = filterStatus === 'All' || pro.availability === filterStatus;
       const matchSearch = (pro.userId || '').toLowerCase().includes(searchQuery.toLowerCase()) || 
                           (pro.bio || '').toLowerCase().includes(searchQuery.toLowerCase());
       return matchCat && matchLoc && matchStatus && matchSearch;
     });
-  }, [filterCategory, filterLocation, filterStatus, searchQuery, proList]);
+  }, [filterCategory, filterLocation, filterStatus, searchQuery, activeList]);
 
   return (
     <div className="min-h-screen bg-[#F8FAFB] pb-20">
@@ -130,7 +101,6 @@ const ProfessionalArchive: React.FC<Props> = ({ proList, onViewProfile, onHire }
                 <span className="text-[10px] font-bold uppercase tracking-widest">Filters</span>
               </div>
               
-              {/* Category Select */}
               <select 
                 value={filterCategory}
                 onChange={(e) => setFilterCategory(e.target.value)}
@@ -140,7 +110,6 @@ const ProfessionalArchive: React.FC<Props> = ({ proList, onViewProfile, onHire }
                 {CATEGORIES.map(cat => <option key={cat} value={cat}>{cat}</option>)}
               </select>
 
-              {/* Availability Select */}
               <select 
                 value={filterStatus}
                 onChange={(e) => setFilterStatus(e.target.value)}
@@ -151,7 +120,6 @@ const ProfessionalArchive: React.FC<Props> = ({ proList, onViewProfile, onHire }
                 <option value={Availability.ON_JOB}>Engaged</option>
               </select>
 
-              {/* Location Select (Simplified) */}
               <select 
                 value={filterLocation}
                 onChange={(e) => setFilterLocation(e.target.value)}
@@ -187,7 +155,6 @@ const ProfessionalArchive: React.FC<Props> = ({ proList, onViewProfile, onHire }
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
             {filteredPros.map((pro) => (
               <div key={pro.id} className="bg-white border border-slate-200 rounded-[10px] overflow-hidden hover:border-[#660033]/30 hover:shadow-xl hover:shadow-[#660033]/5 transition-all group flex flex-col h-full">
-                {/* Photo Header */}
                 <div className="relative h-48 overflow-hidden bg-slate-100">
                   <img src={`https://picsum.photos/seed/${pro.id}/400/400`} alt={pro.userId} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
                   <div className="absolute top-4 right-4 px-3 py-1.5 bg-white/90 backdrop-blur rounded-full flex items-center gap-1.5 shadow-sm">
@@ -201,7 +168,6 @@ const ProfessionalArchive: React.FC<Props> = ({ proList, onViewProfile, onHire }
                   )}
                 </div>
 
-                {/* Content */}
                 <div className="p-6 flex-1 space-y-4">
                   <div className="space-y-1">
                     <h3 className="text-xl font-bold text-slate-900 whitespace-nowrap overflow-hidden text-ellipsis">{pro.userId}</h3>
@@ -218,8 +184,8 @@ const ProfessionalArchive: React.FC<Props> = ({ proList, onViewProfile, onHire }
 
                   <div className="flex items-center justify-between pt-2">
                     <div className="space-y-0.5">
-                      <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Experience</p>
-                      <p className="text-xs font-bold text-[#660033]">{pro.aptitudeScore && pro.aptitudeScore > 90 ? '10+ Years' : '5+ Years'}</p>
+                      <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Aptitude</p>
+                      <p className="text-xs font-bold text-[#660033]">{pro.aptitudeScore || 0}% Score</p>
                     </div>
                     <div className="text-right">
                        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Availability</p>
@@ -233,7 +199,6 @@ const ProfessionalArchive: React.FC<Props> = ({ proList, onViewProfile, onHire }
                   </div>
                 </div>
 
-                {/* Footer Actions */}
                 <div className="p-4 border-t border-slate-50 bg-slate-50/50 flex gap-2">
                    <button 
                     onClick={() => onViewProfile(pro.id)}
@@ -245,7 +210,7 @@ const ProfessionalArchive: React.FC<Props> = ({ proList, onViewProfile, onHire }
                     onClick={() => onHire(pro)}
                     className="flex-1 py-3 bg-[#660033] text-white rounded-xl text-[10px] font-bold uppercase tracking-widest shadow-lg shadow-[#660033]/10 hover:bg-[#2B0116] transition-all"
                    >
-                     Hire Professional
+                     Hire Pro
                    </button>
                 </div>
               </div>

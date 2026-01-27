@@ -25,10 +25,12 @@ export enum RequestStatus {
   PENDING = 'pending',
   ASSIGNED = 'assigned',
   ACCEPTED = 'accepted',
-  REJECTED = 'rejected',
-  COMPLETED = 'completed',
-  CANCELLED = 'cancelled',
+  AWAITING_ESCROW = 'awaiting_escrow',
+  FUNDED = 'funded',
   ACTIVE = 'active',
+  COMPLETED = 'completed',
+  SETTLED = 'settled',
+  CANCELLED = 'cancelled',
   DISPUTED = 'disputed'
 }
 
@@ -81,10 +83,10 @@ export enum WithdrawalStatus {
 export interface Wallet {
   id: string;
   professionalId: string;
-  escrowBalance: number;    // Client paid, held by platform
-  pendingEarnings: number;  // Job completed, waiting for release rule
-  availableBalance: number; // Confirmed, withdrawable
-  totalWithdrawn: number;   // Historical read-only
+  escrowBalance: number;
+  pendingEarnings: number;
+  availableBalance: number;
+  totalWithdrawn: number;
   currency: 'NGN';
 }
 
@@ -97,6 +99,16 @@ export interface WalletTransaction {
   status: TransactionStatus;
   reference: string;
   description: string;
+  createdAt: string;
+}
+
+export interface PaymentWebhook {
+  id: string;
+  provider: string;
+  eventType: string;
+  reference: string;
+  payload: any;
+  processed: boolean;
   createdAt: string;
 }
 
@@ -130,10 +142,37 @@ export interface User {
   updatedAt: string;
 }
 
+export interface Category {
+  id: string;
+  name: string;
+  is_active: boolean;
+}
+
+export interface PlatformSettings {
+  id: string;
+  platform_name: string;
+  support_email: string;
+  default_currency: string;
+  commission_rate: number;
+  min_withdrawal_amount: number;
+  escrow_release_days: number;
+  reg_client_enabled: boolean;
+  reg_pro_enabled: boolean;
+  auto_verify_pros: boolean;
+  manual_vetting_required: boolean;
+  email_notifications_enabled: boolean;
+  default_sender_email: string;
+  admin_alert_recipients: string[];
+  session_timeout_minutes: number;
+  require_email_verification: boolean;
+  admin_only_access: boolean;
+  updated_at: string;
+}
+
 export interface ProfessionalProfile {
   id: string;
   userId: string;
-  category: 'Security' | 'Nanny' | 'House Help' | 'Gardener' | 'Driver' | 'Chef';
+  category: string;
   serviceCategory?: string;
   bio: string;
   location: string;
@@ -150,11 +189,10 @@ export interface ProfessionalProfile {
   rating: number;
   reviewCount: number;
   completedJobs: number;
-  // Identification Fields
   nin?: string;
-  proofOfAddress?: string; // URL to file
-  govtId?: string; // URL to file
-  certificationsUrl?: string; // URL to file
+  proofOfAddress?: string;
+  govtId?: string;
+  certificationsUrl?: string;
 }
 
 export interface HireRequest {
@@ -172,14 +210,17 @@ export interface HireRequest {
     duration?: string;
     livingCondition?: 'LIVE_IN' | 'LIVE_OUT';
     notes?: string;
+    hours?: string;
   };
   notes?: string;
   status: RequestStatus;
-  amount: number;
+  amount: number | null;
   createdAt: string;
   updatedAt: string;
   clientName: string;
   professionalName?: string;
+  providerReference?: string;
+  paymentStatus?: 'unpaid' | 'awaiting_escrow' | 'escrowed' | 'disputed' | 'released';
 }
 
 export interface AppNotification {

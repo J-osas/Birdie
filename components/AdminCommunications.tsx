@@ -4,7 +4,7 @@ import {
   Mail, 
   Bell, 
   Settings, 
-  History, 
+  History as HistoryIcon, 
   Edit3, 
   Eye, 
   CheckCircle2, 
@@ -439,7 +439,7 @@ const AdminCommunications: React.FC = () => {
               { id: 'smtp', label: 'SMTP Config', icon: Settings },
               { id: 'triggers', label: 'Email Triggers', icon: PlayCircle },
               { id: 'templates', label: 'Email Templates', icon: Mail },
-              { id: 'logs', label: 'Transmission Logs', icon: History },
+              { id: 'logs', label: 'Transmission Logs', icon: HistoryIcon },
               { id: 'test', label: 'Test Tool', icon: Send },
             ].map(tab => (
               <button

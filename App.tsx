@@ -109,9 +109,10 @@ const App: React.FC = () => {
         dataService.getCategories(),
         dataService.getPublicProfessionals()
       ]);
+      
       setAppSettings(pSettings);
-      setCategories(dbCats);
-      setPublicPros(pPros);
+      setCategories(dbCats || []);
+      setPublicPros(pPros || []);
 
       const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
       if (sessionError) throw sessionError;
@@ -215,7 +216,7 @@ const App: React.FC = () => {
       });
       
       hydrate();
-      return newRequest; // Return to trigger success state in HireFlow
+      return newRequest; 
     } catch (e) {
       console.error("Hire creation error:", e);
       alert("Failed to submit request. Please try again.");
@@ -275,7 +276,13 @@ const App: React.FC = () => {
       <div className="min-h-screen bg-[#f8fafb] flex flex-col">
         <PublicHeader onLoginClick={() => setPublicView('login' as any)} onViewArchive={() => setPublicView('archive')} onViewBlog={() => setPublicView('blog-archive')} onViewAbout={() => setPublicView('about')} onViewStory={() => setPublicView('story')} onViewContact={() => setPublicView('contact')} onViewHome={() => setPublicView('home')} />
         <div className="flex-1">{renderPublicContent()}</div>
-        {isHireFlowActive && <HireFlow categories={categories.filter(c => c.is_active).map(c => c.name)} onClose={() => setIsHireFlowActive(false)} onSubmit={handleHireSubmit} />}
+        {isHireFlowActive && (
+          <HireFlow 
+            categories={categories.filter(c => c.is_active).map(c => c.name)} 
+            onClose={() => setIsHireFlowActive(false)} 
+            onSubmit={handleHireSubmit} 
+          />
+        )}
       </div>
     );
   }
@@ -348,7 +355,13 @@ const App: React.FC = () => {
           </div>
         )}
         {selectedRequest && <RequestDetail request={selectedRequest} userRole={currentUser.role} onClose={() => setSelectedRequest(null)} onUpdateStatus={handleUpdateJob} />}
-        {isHireFlowActive && <HireFlow categories={categories.filter(c => c.is_active).map(c => c.name)} onClose={() => setIsHireFlowActive(false)} onSubmit={handleHireSubmit} />}
+        {isHireFlowActive && (
+          <HireFlow 
+            categories={categories.filter(c => c.is_active).map(c => c.name)} 
+            onClose={() => setIsHireFlowActive(false)} 
+            onSubmit={handleHireSubmit} 
+          />
+        )}
       </Layout>
     );
   }

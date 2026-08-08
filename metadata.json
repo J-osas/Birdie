@@ -1,7 +1,0 @@
-{
-  "name": "Birdie",
-  "description": "Birdie is a premium, mobile-first SaaS marketplace connecting clients with vetted service professionals like drivers, chefs, and nannies.",
-  "requestFramePermissions": [
-    "camera"
-  ]
-}

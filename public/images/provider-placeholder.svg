@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600" viewBox="0 0 800 600">
+  <rect width="800" height="600" fill="#F1F5F9"/>
+  <rect x="80" y="80" width="640" height="440" rx="40" fill="#E2E8F0"/>
+  <circle cx="400" cy="260" r="70" fill="#CBD5E1"/>
+  <rect x="250" y="360" width="300" height="24" rx="12" fill="#CBD5E1"/>
+  <text x="400" y="520" text-anchor="middle" fill="#64748B" font-family="Arial" font-size="18">Provider at work  supply real photo</text>
+</svg>

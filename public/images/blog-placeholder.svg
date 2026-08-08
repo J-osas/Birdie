@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="500" viewBox="0 0 800 500">
+  <rect width="800" height="500" fill="#EEF2F7"/>
+  <rect x="60" y="60" width="680" height="380" rx="32" fill="#E2E8F0"/>
+  <text x="400" y="260" text-anchor="middle" fill="#64748B" font-family="Arial" font-size="20">Blog editorial image</text>
+</svg>

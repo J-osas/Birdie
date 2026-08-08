@@ -1,0 +1,14 @@
+# Minimal Supabase CLI config for Birdie
+project_id = "wajiuwphekflyayjwwmt"
+
+[api]
+enabled = true
+
+[functions.paystack-initialize]
+verify_jwt = true
+
+[functions.paystack-webhook]
+verify_jwt = false
+
+[functions.paystack-transfer]
+verify_jwt = true

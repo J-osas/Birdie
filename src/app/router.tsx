@@ -25,18 +25,32 @@ import FindPage from '@/features/client/FindPage';
 import InboxPage from '@/features/client/InboxPage';
 import AccountPage from '@/features/client/AccountPage';
 import { UserRole } from '@/types';
-import {
-  CmsPage,
-  CommunicationsPage,
-  PayoutsPage,
-  SettingsPage,
-  VettingPage,
-} from '@/features/admin/AdminPages';
+import { CmsPage, CommunicationsPage, SettingsPage } from '@/features/admin/AdminPages';
+import AdminProfessionalsPage from '@/features/admin/AdminProfessionalsPage';
+import AdminClientsPage from '@/features/admin/AdminClientsPage';
+import AdminPaymentsPage from '@/features/admin/AdminPaymentsPage';
+import AdminReviewsPage from '@/features/admin/AdminReviewsPage';
+import AdminAnalyticsPage from '@/features/admin/AdminAnalyticsPage';
+import AdminSecurityPage from '@/features/admin/AdminSecurityPage';
 
 function SettingsOrAccount() {
   const { user } = useAuth();
   if (user?.role === UserRole.CLIENT) return <Navigate to="/app/account" replace />;
   return <SettingsPage />;
+}
+
+function PaymentsOrWallet() {
+  const { user } = useAuth();
+  const isStaff = user?.role === UserRole.ADMIN || user?.role === UserRole.OPERATIONS;
+  if (isStaff) return <AdminPaymentsPage />;
+  return <Navigate to="/app/wallet" replace />;
+}
+
+function ReviewsRoute() {
+  const { user } = useAuth();
+  const isStaff = user?.role === UserRole.ADMIN || user?.role === UserRole.OPERATIONS;
+  if (isStaff) return <Navigate to="/app/admin/reviews" replace />;
+  return <ProReviewsPage />;
 }
 
 export default function AppRouter() {
@@ -70,17 +84,22 @@ export default function AppRouter() {
             <Route path="hires/:id" element={<HireDetailPage />} />
             <Route path="jobs" element={<Navigate to="/app/hires" replace />} />
             <Route path="calendar" element={<ProCalendarPage />} />
-            <Route path="reviews" element={<ProReviewsPage />} />
+            <Route path="reviews" element={<ReviewsRoute />} />
+            <Route path="admin/reviews" element={<AdminReviewsPage />} />
             <Route path="profile" element={<ProProfilePage />} />
             <Route path="wallet" element={<WalletPage />} />
-            <Route path="payments" element={<Navigate to="/app/wallet" replace />} />
+            <Route path="payments" element={<PaymentsOrWallet />} />
+            <Route path="payouts" element={<Navigate to="/app/payments" replace />} />
             <Route path="inbox" element={<InboxPage />} />
             <Route path="messages" element={<Navigate to="/app/inbox" replace />} />
             <Route path="account" element={<AccountPage />} />
-            <Route path="vetting" element={<VettingPage />} />
-            <Route path="payouts" element={<PayoutsPage />} />
+            <Route path="professionals" element={<AdminProfessionalsPage />} />
+            <Route path="vetting" element={<Navigate to="/app/professionals" replace />} />
+            <Route path="clients" element={<AdminClientsPage />} />
             <Route path="cms" element={<CmsPage />} />
             <Route path="communications" element={<CommunicationsPage />} />
+            <Route path="analytics" element={<AdminAnalyticsPage />} />
+            <Route path="security" element={<AdminSecurityPage />} />
             <Route path="settings" element={<SettingsOrAccount />} />
           </Route>
 

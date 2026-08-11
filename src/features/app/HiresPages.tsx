@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/Button';
 import { TextArea } from '@/components/ui/Input';
 import { supabase } from '@/lib/supabase';
 
-type JobFilter = 'all' | 'active' | 'pending' | 'completed';
+type JobFilter = 'all' | 'active' | 'pending' | 'completed' | 'cancelled' | 'pending_pay';
 
 const ACTIVE_STATUSES = new Set([
   'accepted',
@@ -21,7 +21,10 @@ const ACTIVE_STATUSES = new Set([
   'active',
 ]);
 const PENDING_STATUSES = new Set(['pending', 'assigned', 'awaiting_consultation_pay']);
-const COMPLETED_STATUSES = new Set(['completed', 'settled', 'cancelled', 'disputed']);
+const PENDING_PAY_STATUSES = new Set(['awaiting_consultation_pay', 'awaiting_escrow']);
+const COMPLETED_STATUSES = new Set(['completed', 'settled']);
+const CANCELLED_STATUSES = new Set(['cancelled', 'disputed']);
+const PRO_COMPLETED_STATUSES = new Set(['completed', 'settled', 'cancelled', 'disputed']);
 
 export function HiresListPage() {
   const { user } = useAuth();
@@ -41,35 +44,43 @@ export function HiresListPage() {
 
   const isClient = user?.role === UserRole.CLIENT;
   const isPro = user?.role === UserRole.PROFESSIONAL;
+  const isStaff = user?.role === UserRole.ADMIN || user?.role === UserRole.OPERATIONS;
   const activeCount = hires.filter((h) => ACTIVE_STATUSES.has(h.status)).length;
-  const showAside = isClient || isPro;
+  const pendingPayCount = hires.filter((h) => PENDING_PAY_STATUSES.has(h.status)).length;
+  const completedCount = hires.filter((h) => COMPLETED_STATUSES.has(h.status)).length;
+  const cancelledCount = hires.filter((h) => CANCELLED_STATUSES.has(h.status)).length;
+  const showAside = isClient || isPro || isStaff;
 
   const filtered = useMemo(() => {
-    if (!isPro || filter === 'all') return hires;
+    if ((!isPro && !isStaff) || filter === 'all') return hires;
     return hires.filter((h) => {
       if (filter === 'active') return ACTIVE_STATUSES.has(h.status);
       if (filter === 'pending') return PENDING_STATUSES.has(h.status);
-      if (filter === 'completed') return COMPLETED_STATUSES.has(h.status);
+      if (filter === 'pending_pay') return PENDING_PAY_STATUSES.has(h.status);
+      if (filter === 'completed') {
+        return isStaff ? COMPLETED_STATUSES.has(h.status) : PRO_COMPLETED_STATUSES.has(h.status);
+      }
+      if (filter === 'cancelled') return CANCELLED_STATUSES.has(h.status);
       return true;
     });
-  }, [hires, filter, isPro]);
+  }, [hires, filter, isPro, isStaff]);
 
   return (
     <div className="w-full space-y-8">
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
         <div>
           <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#660033]">
-            {isClient ? 'Hires' : isPro ? 'Jobs' : 'Hires'}
+            {isClient ? 'Hires' : isPro ? 'Jobs' : 'Hire requests'}
           </p>
           <h1 className="text-3xl font-bold text-[#0A0A0A] mt-1">
-            {isClient ? 'Your hired staff' : isPro ? 'Your job pipeline' : 'Hires'}
+            {isClient ? 'Your hired staff' : isPro ? 'Your job pipeline' : 'All hire requests'}
           </h1>
           <p className="text-sm text-[#615A5C] font-medium mt-1 max-w-xl">
             {isClient
               ? 'Track consultation, escrow, and job status for each hire request.'
               : isPro
                 ? 'Accept, message, and complete assigned client jobs from here.'
-                : 'Jobs assigned to you appear here with live status.'}
+                : 'Filter by payment state, active work, completed, or cancelled. Open a hire for staff actions and messaging.'}
           </p>
         </div>
         {isClient && (
@@ -94,6 +105,29 @@ export function HiresListPage() {
               ['active', 'Active'],
               ['pending', 'Pending'],
               ['completed', 'Completed'],
+            ] as const
+          ).map(([id, label]) => (
+            <Button
+              key={id}
+              size="sm"
+              variant={filter === id ? 'primary' : 'secondary'}
+              onClick={() => setFilter(id)}
+            >
+              {label}
+            </Button>
+          ))}
+        </div>
+      )}
+
+      {isStaff && (
+        <div className="flex flex-wrap gap-2">
+          {(
+            [
+              ['all', 'All'],
+              ['pending_pay', 'Pending pay'],
+              ['active', 'Active'],
+              ['completed', 'Completed'],
+              ['cancelled', 'Cancelled'],
             ] as const
           ).map(([id, label]) => (
             <Button
@@ -153,7 +187,9 @@ export function HiresListPage() {
                     ? filter === 'all'
                       ? 'No jobs assigned yet. Stay verified and available so clients can hire you.'
                       : `No ${filter} jobs right now.`
-                    : 'No hire requests yet.'}
+                    : filter === 'all'
+                      ? 'No hire requests yet.'
+                      : `No ${filter.replace(/_/g, ' ')} requests.`}
               </p>
               {isClient && (
                 <Link to="/app" className="inline-block text-[#660033] font-bold text-sm">
@@ -168,6 +204,37 @@ export function HiresListPage() {
             </div>
           )}
         </div>
+
+        {isStaff && (
+          <aside className="bg-white border border-slate-200 rounded-[1.75rem] p-6 space-y-3 h-fit sticky top-24">
+            <p className="text-xs font-bold uppercase tracking-widest text-[#660033]">Queue counts</p>
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between gap-3">
+                <span className="text-slate-500 font-medium">Total</span>
+                <span className="font-bold">{hires.length}</span>
+              </div>
+              <div className="flex justify-between gap-3">
+                <span className="text-slate-500 font-medium">Pending pay</span>
+                <span className="font-bold">{pendingPayCount}</span>
+              </div>
+              <div className="flex justify-between gap-3">
+                <span className="text-slate-500 font-medium">Active</span>
+                <span className="font-bold">{activeCount}</span>
+              </div>
+              <div className="flex justify-between gap-3">
+                <span className="text-slate-500 font-medium">Completed</span>
+                <span className="font-bold">{completedCount}</span>
+              </div>
+              <div className="flex justify-between gap-3">
+                <span className="text-slate-500 font-medium">Cancelled</span>
+                <span className="font-bold">{cancelledCount}</span>
+              </div>
+            </div>
+            <p className="text-sm text-[#615A5C] font-medium leading-relaxed border-t border-slate-100 pt-3">
+              Advance consultation → escrow → active → settled from each hire detail.
+            </p>
+          </aside>
+        )}
 
         {isClient && (
           <aside className="space-y-5">

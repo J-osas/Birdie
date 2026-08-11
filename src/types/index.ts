@@ -143,7 +143,42 @@ export interface PlatformSettings {
   session_timeout_minutes: number;
   require_email_verification: boolean;
   admin_only_access: boolean;
+  ga_measurement_id?: string | null;
   updated_at: string;
+}
+
+export interface AdminAuditLog {
+  id: string;
+  actorId?: string | null;
+  action: string;
+  entityType: string;
+  entityId?: string | null;
+  meta: Record<string, unknown>;
+  createdAt: string;
+}
+
+export interface CommunicationTemplate {
+  id: string;
+  slug: string;
+  name: string;
+  subject: string;
+  body: string;
+  variables: string[];
+  status: string;
+  updatedAt: string;
+}
+
+export interface CommunicationLog {
+  id: string;
+  toEmail: string;
+  recipientRole?: string | null;
+  subject: string;
+  templateSlug?: string | null;
+  status: string;
+  relatedEvent?: string | null;
+  sentAt?: string | null;
+  retryCount: number;
+  error?: string | null;
 }
 
 export interface ProfessionalProfile {

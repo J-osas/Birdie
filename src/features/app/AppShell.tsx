@@ -19,6 +19,9 @@ import {
   MoreHorizontal,
   MessageSquare,
   UserRound,
+  BarChart3,
+  Shield,
+  UserCircle,
   type LucideIcon,
 } from 'lucide-react';
 import { useAuth } from '@/app/AuthProvider';
@@ -121,13 +124,17 @@ export default function AppShell() {
 
   const links: NavItem[] = isStaff
     ? [
-        { to: '/app', icon: LayoutDashboard, label: 'Ops hub', end: true },
-        { to: '/app/vetting', icon: Users, label: 'Vetting' },
-        { to: '/app/hires', icon: Briefcase, label: 'Hires' },
-        { to: '/app/payouts', icon: Wallet, label: 'Payouts' },
-        { to: '/app/cms', icon: FileText, label: 'CMS' },
-        { to: '/app/communications', icon: Megaphone, label: 'Comms' },
+        { to: '/app', icon: LayoutDashboard, label: 'Overview', end: true },
+        { to: '/app/professionals', icon: Users, label: 'Professionals' },
+        { to: '/app/clients', icon: UserCircle, label: 'Clients' },
+        { to: '/app/hires', icon: Briefcase, label: 'Hire requests' },
+        { to: '/app/payments', icon: Wallet, label: 'Payments' },
+        { to: '/app/admin/reviews', icon: Star, label: 'Reviews' },
+        { to: '/app/cms', icon: FileText, label: 'Content (CMS)' },
+        { to: '/app/communications', icon: Megaphone, label: 'Communications' },
+        { to: '/app/analytics', icon: BarChart3, label: 'Analytics' },
         { to: '/app/settings', icon: Settings, label: 'Settings' },
+        { to: '/app/security', icon: Shield, label: 'Security' },
       ]
     : isPro
       ? [
@@ -147,7 +154,12 @@ export default function AppShell() {
         ];
 
   const primaryLinks: NavItem[] = isStaff
-    ? links.slice(0, 4)
+    ? [
+        links[0], // Overview
+        links[1], // Professionals
+        links[3], // Hire requests
+        links[4], // Payments
+      ]
     : isPro
       ? [
           links[0],
@@ -158,7 +170,15 @@ export default function AppShell() {
       : links;
 
   const moreLinks: NavItem[] = isStaff
-    ? links.slice(4)
+    ? [
+        links[2], // Clients
+        links[5], // Reviews
+        links[6], // CMS
+        links[7], // Communications
+        links[8], // Analytics
+        links[9], // Settings
+        links[10], // Security
+      ]
     : isPro
       ? [
           links[3], // Reviews
@@ -174,9 +194,9 @@ export default function AppShell() {
 
   const displayName = user.name || user.firstName || 'User';
   const avatarSrc = user.avatarUrl || proProfile?.avatarUrl || IMAGES.avatarFallback;
-  const showProfileFooter = isClient || isPro;
+  const showProfileFooter = isClient || isPro || isStaff;
   const editProfileTo = isPro ? '/app/profile' : isClient ? '/app/account' : '/app/settings';
-  const settingsTo = isClient ? '/app/account' : '/app/settings';
+  const settingsTo = isClient ? '/app/account' : isStaff ? '/app/settings' : '/app/settings';
 
   return (
     <div className="min-h-screen flex bg-[#F8FAFB]">
@@ -212,7 +232,7 @@ export default function AppShell() {
         {showProfileFooter ? (
           <div className="space-y-3 border-t border-slate-100 pt-4">
             <Link
-              to={isClient ? '/app/account' : '/app/settings'}
+              to={isStaff ? '/app/settings' : isClient ? '/app/account' : '/app/settings'}
               className="flex items-center gap-3 px-2 py-2 rounded-xl hover:bg-slate-50"
             >
               <img
@@ -223,7 +243,7 @@ export default function AppShell() {
               <div className="min-w-0">
                 <p className="font-bold text-sm text-[#0A0A0A] truncate">{displayName}</p>
                 <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
-                  {isClient ? 'Client' : 'Professional'}
+                  {isStaff ? 'Admin' : isClient ? 'Client' : 'Professional'}
                 </p>
               </div>
             </Link>

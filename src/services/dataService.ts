@@ -10,6 +10,7 @@ import {
   Review,
   User,
   UserRole,
+  UserStatus,
   Wallet,
   WalletTransaction,
   WithdrawalRequest,
@@ -18,6 +19,9 @@ import {
   Message,
   AppNotification,
   ProfessionalCertification,
+  AdminAuditLog,
+  CommunicationTemplate,
+  CommunicationLog,
 } from '@/types';
 import { DEFAULT_CONSULTATION_FEE } from '@/data/constants';
 
@@ -129,6 +133,8 @@ export const dataService = {
     return {
       ...data,
       consultation_fee_ngn: Number(data.consultation_fee_ngn ?? DEFAULT_CONSULTATION_FEE),
+      min_withdrawal_amount: Number(data.min_withdrawal_amount ?? 5000),
+      ga_measurement_id: (data.ga_measurement_id as string) || null,
     } as PlatformSettings;
   },
 
@@ -261,10 +267,10 @@ export const dataService = {
     if (error) throw error;
   },
 
-  async updateProfessionalStatus(proId: string, status: ProfessionalStatus) {
+  async updateProfessionalStatus(proId: string, status: ProfessionalStatus, actorId?: string) {
     const { data: pro, error: fetchErr } = await supabase
       .from('professional_profiles')
-      .select('user_id')
+      .select('user_id, full_name')
       .eq('id', proId)
       .maybeSingle();
     if (fetchErr) throw fetchErr;
@@ -295,6 +301,14 @@ export const dataService = {
         'verification'
       );
     }
+
+    await this.writeAuditLog({
+      actorId,
+      action: status === ProfessionalStatus.VERIFIED ? 'pro.verify' : status === ProfessionalStatus.REJECTED ? 'pro.reject' : 'pro.status',
+      entityType: 'professional',
+      entityId: proId,
+      meta: { status, name: pro?.full_name },
+    });
   },
 
   async submitAssessment(
@@ -403,12 +417,19 @@ export const dataService = {
     return data || [];
   },
 
-  async setCertificationStatus(certId: string, status: 'approved' | 'rejected') {
+  async setCertificationStatus(certId: string, status: 'approved' | 'rejected', actorId?: string) {
     const { error } = await supabase
       .from('professional_certifications')
       .update({ verification_status: status })
       .eq('id', certId);
     if (error) throw error;
+    await this.writeAuditLog({
+      actorId,
+      action: status === 'approved' ? 'cert.approve' : 'cert.reject',
+      entityType: 'certification',
+      entityId: certId,
+      meta: { status },
+    });
   },
 
   async addDocument(professionalId: string, docType: string, storagePath: string) {
@@ -635,12 +656,239 @@ export const dataService = {
         name: row.full_name,
         email: row.email || '',
         phone: row.phone || '',
-        status: row.status,
+        status: row.status as UserStatus,
         emailVerified: true,
+        avatarUrl: row.avatar_url || undefined,
+        deletedAt: row.deleted_at ?? null,
         createdAt: row.created_at,
         updatedAt: row.updated_at,
       };
     });
+  },
+
+  async listClients(): Promise<(User & { hireCount: number })[]> {
+    const users = (await this.getAllUsers()).filter((u) => u.role === UserRole.CLIENT);
+    const { data: hires } = await supabase.from('hire_requests').select('client_id');
+    const counts = new Map<string, number>();
+    for (const h of hires || []) {
+      const id = String(h.client_id);
+      counts.set(id, (counts.get(id) || 0) + 1);
+    }
+    return users.map((u) => ({ ...u, hireCount: counts.get(u.id) || 0 }));
+  },
+
+  async listStaff(): Promise<User[]> {
+    return (await this.getAllUsers()).filter(
+      (u) => u.role === UserRole.ADMIN || u.role === UserRole.OPERATIONS
+    );
+  },
+
+  async updateUserStatus(userId: string, status: UserStatus, deletedAt?: string | null, actorId?: string) {
+    const patch: Record<string, unknown> = {
+      status,
+      updated_at: new Date().toISOString(),
+    };
+    if (deletedAt !== undefined) patch.deleted_at = deletedAt;
+    const { error } = await supabase.from('profiles').update(patch).eq('id', userId);
+    if (error) throw error;
+    await this.writeAuditLog({
+      actorId,
+      action: status === UserStatus.SUSPENDED ? 'user.suspend' : 'user.restore',
+      entityType: 'profile',
+      entityId: userId,
+      meta: { status, deletedAt: deletedAt ?? null },
+    });
+  },
+
+  async listAllReviews(): Promise<Review[]> {
+    const { data, error } = await supabase
+      .from('reviews')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (error || !data) return [];
+    return data.map((row) => ({
+      id: row.id,
+      hireRequestId: row.hire_request_id,
+      professionalId: row.professional_id,
+      clientId: row.client_id,
+      clientName: row.client_name,
+      category: row.category,
+      rating: row.rating,
+      comment: row.comment,
+      createdAt: row.created_at,
+      status: row.status,
+    }));
+  },
+
+  async setReviewStatus(id: string, status: string, actorId?: string) {
+    const { error } = await supabase.from('reviews').update({ status }).eq('id', id);
+    if (error) throw error;
+    await this.writeAuditLog({
+      actorId,
+      action: 'review.status',
+      entityType: 'review',
+      entityId: id,
+      meta: { status },
+    });
+  },
+
+  async writeAuditLog(params: {
+    actorId?: string | null;
+    action: string;
+    entityType: string;
+    entityId?: string | null;
+    meta?: Record<string, unknown>;
+  }) {
+    try {
+      await supabase.from('admin_audit_log').insert({
+        actor_id: params.actorId || null,
+        action: params.action,
+        entity_type: params.entityType,
+        entity_id: params.entityId || null,
+        meta: params.meta || {},
+      });
+    } catch {
+      /* audit is best-effort */
+    }
+  },
+
+  async listAuditLog(limit = 40): Promise<AdminAuditLog[]> {
+    const { data, error } = await supabase
+      .from('admin_audit_log')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(limit);
+    if (error || !data) return [];
+    return data.map((row) => ({
+      id: row.id,
+      actorId: row.actor_id,
+      action: row.action,
+      entityType: row.entity_type,
+      entityId: row.entity_id,
+      meta: (row.meta as Record<string, unknown>) || {},
+      createdAt: row.created_at,
+    }));
+  },
+
+  async rejectWithdrawal(id: string, note?: string, actorId?: string) {
+    const { error } = await supabase
+      .from('withdrawal_requests')
+      .update({
+        status: WithdrawalStatus.REJECTED,
+        admin_note: note || 'Rejected by staff',
+        processed_at: new Date().toISOString(),
+      })
+      .eq('id', id);
+    if (error) throw error;
+    await this.writeAuditLog({
+      actorId,
+      action: 'payout.reject',
+      entityType: 'withdrawal',
+      entityId: id,
+      meta: { note },
+    });
+  },
+
+  async getEscrowSnapshot(): Promise<{ count: number; total: number }> {
+    const { data, error } = await supabase
+      .from('hire_requests')
+      .select('escrow_amount, status')
+      .in('status', ['funded', 'active']);
+    if (error || !data) return { count: 0, total: 0 };
+    const total = data.reduce((sum, row) => sum + Number(row.escrow_amount || 0), 0);
+    return { count: data.length, total };
+  },
+
+  async getAdminAnalytics() {
+    const [clients, pros, hires, settings] = await Promise.all([
+      this.listClients(),
+      this.getAllProfessionals(),
+      this.getHireRequests('admin', 'ADMIN'),
+      this.getPlatformSettings(),
+    ]);
+    const verified = pros.filter(
+      (p) => p.status === ProfessionalStatus.VERIFIED || p.status === ProfessionalStatus.APPROVED
+    ).length;
+    const byStatus: Record<string, number> = {};
+    for (const h of hires) {
+      byStatus[h.status] = (byStatus[h.status] || 0) + 1;
+    }
+    const byCategory: Record<string, number> = {};
+    for (const p of pros) {
+      byCategory[p.category] = (byCategory[p.category] || 0) + 1;
+    }
+    return {
+      clientCount: clients.length,
+      proCount: pros.length,
+      verifiedCount: verified,
+      verifiedPct: pros.length ? Math.round((verified / pros.length) * 100) : 0,
+      hiresByStatus: byStatus,
+      prosByCategory: byCategory,
+      consultationFee: settings.consultation_fee_ngn,
+      commissionRate: settings.commission_rate,
+      escrowDays: settings.escrow_release_days,
+    };
+  },
+
+  async listCommunicationTemplates(): Promise<CommunicationTemplate[]> {
+    const { data, error } = await supabase
+      .from('communication_templates')
+      .select('*')
+      .order('updated_at', { ascending: false });
+    if (error || !data) return [];
+    return data.map((row) => ({
+      id: row.id,
+      slug: row.slug,
+      name: row.name,
+      subject: row.subject,
+      body: row.body,
+      variables: row.variables || [],
+      status: row.status,
+      updatedAt: row.updated_at,
+    }));
+  },
+
+  async listCommunicationLogs(): Promise<CommunicationLog[]> {
+    const { data, error } = await supabase
+      .from('communication_logs')
+      .select('*')
+      .order('sent_at', { ascending: false })
+      .limit(50);
+    if (error || !data) return [];
+    return data.map((row) => ({
+      id: row.id,
+      toEmail: row.to_email,
+      recipientRole: row.recipient_role,
+      subject: row.subject,
+      templateSlug: row.template_slug,
+      status: row.status,
+      relatedEvent: row.related_event,
+      sentAt: row.sent_at,
+      retryCount: row.retry_count,
+      error: row.error,
+    }));
+  },
+
+  async getBlogPost(id: string): Promise<BlogPost | null> {
+    const { data, error } = await supabase.from('blog_posts').select('*').eq('id', id).maybeSingle();
+    if (error || !data) return null;
+    return {
+      id: data.id,
+      title: data.title,
+      slug: data.slug,
+      excerpt: data.excerpt || '',
+      content: data.content || '',
+      category: data.category || 'Guides',
+      author: data.author || 'Birdie',
+      imageUrl: data.image_url || undefined,
+      published: data.published,
+      createdAt: data.created_at,
+      date: new Date(data.created_at).toLocaleDateString('en-NG', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+      }),
+    };
   },
 
   async getMessages(hireRequestId: string): Promise<Message[]> {

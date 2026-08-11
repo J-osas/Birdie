@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { NavLink, Outlet, Navigate, Link, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard,
@@ -18,6 +18,7 @@ import {
   CreditCard,
   MoreHorizontal,
   MessageSquare,
+  UserRound,
   type LucideIcon,
 } from 'lucide-react';
 import { useAuth } from '@/app/AuthProvider';
@@ -35,19 +36,39 @@ export default function AppShell() {
   const { status, user, proProfile, blockedReason, signOut } = useAuth();
   const location = useLocation();
   const [moreOpen, setMoreOpen] = useState(false);
+  const [avatarMenuOpen, setAvatarMenuOpen] = useState(false);
+  const avatarMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setMoreOpen(false);
+    setAvatarMenuOpen(false);
   }, [location.pathname]);
 
   useEffect(() => {
-    if (!moreOpen) return;
+    if (!moreOpen && !avatarMenuOpen) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setMoreOpen(false);
+      if (e.key === 'Escape') {
+        setMoreOpen(false);
+        setAvatarMenuOpen(false);
+      }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [moreOpen]);
+  }, [moreOpen, avatarMenuOpen]);
+
+  useEffect(() => {
+    if (!avatarMenuOpen) return;
+    const onPointer = (e: MouseEvent | TouchEvent) => {
+      const el = avatarMenuRef.current;
+      if (el && !el.contains(e.target as Node)) setAvatarMenuOpen(false);
+    };
+    document.addEventListener('mousedown', onPointer);
+    document.addEventListener('touchstart', onPointer);
+    return () => {
+      document.removeEventListener('mousedown', onPointer);
+      document.removeEventListener('touchstart', onPointer);
+    };
+  }, [avatarMenuOpen]);
 
   if (status === 'loading') {
     return (
@@ -154,6 +175,8 @@ export default function AppShell() {
   const displayName = user.name || user.firstName || 'User';
   const avatarSrc = user.avatarUrl || proProfile?.avatarUrl || IMAGES.avatarFallback;
   const showProfileFooter = isClient || isPro;
+  const editProfileTo = isPro ? '/app/profile' : isClient ? '/app/account' : '/app/settings';
+  const settingsTo = isClient ? '/app/account' : '/app/settings';
 
   return (
     <div className="min-h-screen flex bg-[#F8FAFB]">
@@ -227,19 +250,68 @@ export default function AppShell() {
         <header className="sticky top-0 z-30 flex items-center justify-between px-4 md:px-8 h-14 md:h-16 border-b border-slate-200 bg-white">
           <p className="font-bold md:hidden">Birdie</p>
           <div className="hidden md:block" />
-          {isClient || isPro ? (
-            <Link
-              to="/app/inbox"
-              className="ml-auto p-2 rounded-xl text-slate-400 hover:text-[#660033] hover:bg-slate-50"
-              aria-label={isClient ? 'Inbox' : 'Messages'}
-            >
-              <Bell size={20} />
-            </Link>
-          ) : (
-            <button type="button" onClick={() => signOut()} className="md:hidden text-xs font-bold text-slate-400">
-              Sign out
-            </button>
-          )}
+          <div className="ml-auto flex items-center gap-1.5">
+            {(isClient || isPro) && (
+              <Link
+                to="/app/inbox"
+                className="p-2 rounded-xl text-slate-400 hover:text-[#660033] hover:bg-slate-50"
+                aria-label={isClient ? 'Inbox' : 'Messages'}
+              >
+                <Bell size={20} />
+              </Link>
+            )}
+            <div className="relative md:hidden" ref={avatarMenuRef}>
+              <button
+                type="button"
+                onClick={() => setAvatarMenuOpen((o) => !o)}
+                className="rounded-full p-0.5 border border-slate-200 hover:border-[#660033]/40 focus:outline-none focus:ring-2 focus:ring-[#660033]/20"
+                aria-label="Account menu"
+                aria-expanded={avatarMenuOpen}
+              >
+                <img src={avatarSrc} alt="" className="w-9 h-9 rounded-full object-cover" />
+              </button>
+              {avatarMenuOpen && (
+                <div className="absolute right-0 mt-2 w-52 rounded-2xl border border-slate-200 bg-white shadow-xl shadow-slate-200/50 py-2 z-50">
+                  <p className="px-4 py-2 text-[10px] font-bold uppercase tracking-widest text-slate-400 truncate">
+                    {displayName}
+                  </p>
+                  <Link
+                    to={editProfileTo}
+                    onClick={() => setAvatarMenuOpen(false)}
+                    className="flex items-center gap-3 px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-50"
+                  >
+                    <UserRound size={16} className="text-[#660033]" /> Edit profile
+                  </Link>
+                  <Link
+                    to={settingsTo}
+                    onClick={() => setAvatarMenuOpen(false)}
+                    className="flex items-center gap-3 px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-50"
+                  >
+                    <Settings size={16} className="text-[#660033]" /> Settings
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAvatarMenuOpen(false);
+                      signOut();
+                    }}
+                    className="flex items-center gap-3 px-4 py-2.5 text-sm font-bold text-[#660033] hover:bg-[#660033]/5 w-full text-left"
+                  >
+                    <LogOut size={16} /> Log out
+                  </button>
+                </div>
+              )}
+            </div>
+            {isStaff && (
+              <button
+                type="button"
+                onClick={() => signOut()}
+                className="hidden md:inline text-xs font-bold text-slate-400"
+              >
+                Sign out
+              </button>
+            )}
+          </div>
         </header>
         <main className="flex-1 p-4 md:p-8 pb-24 md:pb-8">
           <Outlet />

@@ -1,18 +1,32 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
+import { Briefcase, Star } from 'lucide-react';
 import { useAuth } from '@/app/AuthProvider';
 import { dataService } from '@/services/dataService';
-import { Star } from 'lucide-react';
 import { HireRequest, Message, RequestStatus, Review, UserRole } from '@/types';
 import { getStatusStyle } from '@/data/constants';
 import { formatNaira } from '@/lib/utils';
+import { IMAGES } from '@/data/images';
 import { Button } from '@/components/ui/Button';
 import { TextArea } from '@/components/ui/Input';
 import { supabase } from '@/lib/supabase';
 
+type JobFilter = 'all' | 'active' | 'pending' | 'completed';
+
+const ACTIVE_STATUSES = new Set([
+  'accepted',
+  'consultation_paid',
+  'awaiting_escrow',
+  'funded',
+  'active',
+]);
+const PENDING_STATUSES = new Set(['pending', 'assigned', 'awaiting_consultation_pay']);
+const COMPLETED_STATUSES = new Set(['completed', 'settled', 'cancelled', 'disputed']);
+
 export function HiresListPage() {
   const { user } = useAuth();
   const [hires, setHires] = useState<HireRequest[]>([]);
+  const [filter, setFilter] = useState<JobFilter>('all');
 
   useEffect(() => {
     if (!user) return;
@@ -25,30 +39,217 @@ export function HiresListPage() {
     dataService.getHireRequests(user.id, role).then(setHires);
   }, [user]);
 
+  const isClient = user?.role === UserRole.CLIENT;
+  const isPro = user?.role === UserRole.PROFESSIONAL;
+  const activeCount = hires.filter((h) => ACTIVE_STATUSES.has(h.status)).length;
+  const showAside = isClient || isPro;
+
+  const filtered = useMemo(() => {
+    if (!isPro || filter === 'all') return hires;
+    return hires.filter((h) => {
+      if (filter === 'active') return ACTIVE_STATUSES.has(h.status);
+      if (filter === 'pending') return PENDING_STATUSES.has(h.status);
+      if (filter === 'completed') return COMPLETED_STATUSES.has(h.status);
+      return true;
+    });
+  }, [hires, filter, isPro]);
+
   return (
-    <div className="space-y-6">
-      <h1 className="text-3xl font-bold">Hires</h1>
-      <div className="space-y-3">
-        {hires.map((h) => (
-          <Link
-            key={h.id}
-            to={`/app/hires/${h.id}`}
-            className="block bg-white border border-slate-200 rounded-2xl p-5 hover:shadow-md"
-          >
-            <div className="flex justify-between gap-3">
-              <div>
-                <p className="font-bold">{h.serviceRequested || h.serviceCategory}</p>
-                <p className="text-xs text-slate-500 mt-1">
-                  {h.clientName} → {h.professionalName || 'Unassigned'}
-                </p>
-              </div>
-              <span className={`px-2 py-1 h-fit rounded-full text-[9px] font-bold uppercase border ${getStatusStyle(h.status)}`}>
-                {h.status.replace(/_/g, ' ')}
-              </span>
-            </div>
+    <div className="w-full space-y-8">
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
+        <div>
+          <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#660033]">
+            {isClient ? 'Hires' : isPro ? 'Jobs' : 'Hires'}
+          </p>
+          <h1 className="text-3xl font-bold text-[#0A0A0A] mt-1">
+            {isClient ? 'Your hired staff' : isPro ? 'Your job pipeline' : 'Hires'}
+          </h1>
+          <p className="text-sm text-[#615A5C] font-medium mt-1 max-w-xl">
+            {isClient
+              ? 'Track consultation, escrow, and job status for each hire request.'
+              : isPro
+                ? 'Accept, message, and complete assigned client jobs from here.'
+                : 'Jobs assigned to you appear here with live status.'}
+          </p>
+        </div>
+        {isClient && (
+          <Link to="/app">
+            <Button size="sm">Find professionals</Button>
           </Link>
-        ))}
-        {hires.length === 0 && <p className="text-slate-400 italic">No hire requests yet.</p>}
+        )}
+        {isPro && (
+          <Link to="/app/wallet">
+            <Button size="sm" variant="secondary">
+              Open payments
+            </Button>
+          </Link>
+        )}
+      </div>
+
+      {isPro && (
+        <div className="flex flex-wrap gap-2">
+          {(
+            [
+              ['all', 'All'],
+              ['active', 'Active'],
+              ['pending', 'Pending'],
+              ['completed', 'Completed'],
+            ] as const
+          ).map(([id, label]) => (
+            <Button
+              key={id}
+              size="sm"
+              variant={filter === id ? 'primary' : 'secondary'}
+              onClick={() => setFilter(id)}
+            >
+              {label}
+            </Button>
+          ))}
+        </div>
+      )}
+
+      <div className={`grid gap-6 items-start ${showAside ? 'lg:grid-cols-[1.2fr_0.8fr]' : ''}`}>
+        <div className="space-y-3 min-w-0">
+          {filtered.map((h) => (
+            <Link
+              key={h.id}
+              to={`/app/hires/${h.id}`}
+              className="block bg-white border border-slate-200 rounded-[1.75rem] p-5 hover:shadow-md hover:border-[#660033]/20 transition-all"
+            >
+              <div className="flex justify-between gap-3">
+                <div>
+                  <p className="font-bold text-[#0A0A0A]">{h.serviceRequested || h.serviceCategory}</p>
+                  <p className="text-xs text-slate-500 mt-1">
+                    {isClient
+                      ? h.professionalName || 'Matching professional…'
+                      : isPro
+                        ? h.clientName
+                        : `${h.clientName} → ${h.professionalName || 'Unassigned'}`}
+                  </p>
+                  {h.amount != null && (
+                    <p className="text-xs font-bold text-[#660033] mt-2">{formatNaira(h.amount)}</p>
+                  )}
+                  {isPro && !h.preferredStartDate && ACTIVE_STATUSES.has(h.status) && (
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-amber-600 mt-2">
+                      Unscheduled
+                    </p>
+                  )}
+                </div>
+                <span
+                  className={`px-2 py-1 h-fit rounded-full text-[9px] font-bold uppercase border ${getStatusStyle(h.status)}`}
+                >
+                  {h.status.replace(/_/g, ' ')}
+                </span>
+              </div>
+            </Link>
+          ))}
+          {filtered.length === 0 && (
+            <div className="py-16 px-8 bg-white rounded-[1.75rem] border border-dashed border-slate-200 space-y-3">
+              <Briefcase className="text-slate-300" size={32} />
+              <p className="text-[#615A5C] font-medium max-w-md">
+                {isClient
+                  ? 'You haven’t hired anyone yet.'
+                  : isPro
+                    ? filter === 'all'
+                      ? 'No jobs assigned yet. Stay verified and available so clients can hire you.'
+                      : `No ${filter} jobs right now.`
+                    : 'No hire requests yet.'}
+              </p>
+              {isClient && (
+                <Link to="/app" className="inline-block text-[#660033] font-bold text-sm">
+                  Browse Find to hire someone
+                </Link>
+              )}
+              {isPro && (
+                <Link to="/app" className="inline-block text-[#660033] font-bold text-sm">
+                  Review your dashboard
+                </Link>
+              )}
+            </div>
+          )}
+        </div>
+
+        {isClient && (
+          <aside className="space-y-5">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="bg-white border border-slate-200 rounded-[1.75rem] p-5">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Total</p>
+                <p className="text-3xl font-black text-[#0A0A0A] mt-1">{hires.length}</p>
+              </div>
+              <div className="bg-white border border-slate-200 rounded-[1.75rem] p-5">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">In progress</p>
+                <p className="text-3xl font-black text-[#0A0A0A] mt-1">{activeCount}</p>
+              </div>
+            </div>
+            <div className="bg-white border border-slate-200 rounded-[1.75rem] p-6 space-y-3">
+              <h2 className="font-bold text-[#0A0A0A]">Status guide</h2>
+              <ul className="space-y-2 text-sm text-[#615A5C] font-medium">
+                <li>
+                  <span className="font-bold text-[#0A0A0A]">Awaiting consultation pay</span> — pay the one-time fee
+                </li>
+                <li>
+                  <span className="font-bold text-[#0A0A0A]">Funded / Active</span> — escrow is in place and work can run
+                </li>
+                <li>
+                  <span className="font-bold text-[#0A0A0A]">Completed</span> — leave a review from the hire detail
+                </li>
+              </ul>
+            </div>
+            <div className="bg-[#660033] text-white rounded-[1.75rem] p-6 space-y-2">
+              <p className="text-xs font-bold uppercase tracking-widest text-white/60">Next step</p>
+              <p className="font-bold text-lg">Need another hire?</p>
+              <p className="text-sm text-white/75 font-medium">
+                Open Find, pick a category, and start a new request anytime.
+              </p>
+              <Link to="/app" className="inline-block text-sm font-bold underline underline-offset-4 pt-1">
+                Go to Find
+              </Link>
+            </div>
+          </aside>
+        )}
+
+        {isPro && (
+          <aside className="space-y-5">
+            <div className="rounded-[1.75rem] overflow-hidden h-40 border border-slate-200">
+              <img src={IMAGES.process} alt="" className="w-full h-full object-cover" />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="bg-white border border-slate-200 rounded-[1.75rem] p-5">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Total</p>
+                <p className="text-3xl font-black text-[#0A0A0A] mt-1">{hires.length}</p>
+              </div>
+              <div className="bg-white border border-slate-200 rounded-[1.75rem] p-5">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">Active</p>
+                <p className="text-3xl font-black text-[#0A0A0A] mt-1">{activeCount}</p>
+              </div>
+            </div>
+            <div className="bg-white border border-slate-200 rounded-[1.75rem] p-6 space-y-3">
+              <h2 className="font-bold text-[#0A0A0A]">What to do next</h2>
+              <ul className="space-y-2 text-sm text-[#615A5C] font-medium">
+                <li>
+                  <span className="font-bold text-[#0A0A0A]">New / accepted</span> — open the job and message the client
+                </li>
+                <li>
+                  <span className="font-bold text-[#0A0A0A]">Funded / Active</span> — deliver the work; keep updates
+                  in-thread
+                </li>
+                <li>
+                  <span className="font-bold text-[#0A0A0A]">Completed</span> — earnings move toward your wallet
+                </li>
+              </ul>
+            </div>
+            <div className="bg-[#660033] text-white rounded-[1.75rem] p-6 space-y-2">
+              <p className="text-xs font-bold uppercase tracking-widest text-white/60">Earn more</p>
+              <p className="font-bold text-lg">Stay available</p>
+              <p className="text-sm text-white/75 font-medium">
+                Set availability on Profile so you show as hireable in Find.
+              </p>
+              <Link to="/app/profile" className="inline-block text-sm font-bold underline underline-offset-4 pt-1">
+                Open profile
+              </Link>
+            </div>
+          </aside>
+        )}
       </div>
     </div>
   );
@@ -106,7 +307,7 @@ export function HireDetailPage() {
       <Link to="/app/hires" className="text-sm font-bold text-slate-500 hover:text-[#660033]">
         ← Back
       </Link>
-      <div className="bg-white border border-slate-200 rounded-[2rem] p-8 space-y-4">
+      <div className="bg-white border border-slate-200 rounded-[1.75rem] p-8 space-y-4">
         <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase border ${getStatusStyle(hire.status)}`}>
           {hire.status.replace(/_/g, ' ')}
         </span>
@@ -191,7 +392,7 @@ export function HireDetailPage() {
         </div>
       </div>
 
-      <div className="bg-white border border-slate-200 rounded-[2rem] p-6 space-y-4">
+      <div className="bg-white border border-slate-200 rounded-[1.75rem] p-6 space-y-4">
         <h2 className="text-xl font-bold">Messages</h2>
         <div className="space-y-3 max-h-72 overflow-y-auto custom-scrollbar">
           {messages.map((m) => (
@@ -222,7 +423,7 @@ export function HireDetailPage() {
       </div>
 
       {existingReview && isClient && (
-        <div className="bg-white border border-slate-200 rounded-[2rem] p-6 space-y-2">
+        <div className="bg-white border border-slate-200 rounded-[1.75rem] p-6 space-y-2">
           <h2 className="text-xl font-bold">Your review</h2>
           <div className="flex gap-1">
             {[1, 2, 3, 4, 5].map((n) => (
@@ -237,7 +438,7 @@ export function HireDetailPage() {
         (hire.status === RequestStatus.COMPLETED || hire.status === RequestStatus.SETTLED) &&
         hire.professionalId &&
         !existingReview && (
-        <div className="bg-white border border-slate-200 rounded-[2rem] p-6 space-y-4">
+        <div className="bg-white border border-slate-200 rounded-[1.75rem] p-6 space-y-4">
           <h2 className="text-xl font-bold">How was your experience?</h2>
           <p className="text-sm text-slate-500">Rate {hire.professionalName || 'this professional'} — reviews appear on their public profile.</p>
           <div className="flex gap-2">

@@ -42,7 +42,7 @@ export default function RegisterPage() {
   if (success) {
     return (
       <div className="min-h-screen flex items-center justify-center p-6">
-        <div className="max-w-md bg-white p-12 rounded-[3rem] border border-slate-200 shadow-2xl text-center space-y-6">
+        <div className="max-w-md bg-white p-12 rounded-[2.5rem] border border-slate-200 shadow-2xl text-center space-y-6">
           <CheckCircle2 className="mx-auto text-emerald-500" size={48} />
           <h2 className="text-3xl font-bold">Welcome to Birdie</h2>
           <p className="text-slate-500 font-medium">Check your email if verification is required, then sign in.</p>
@@ -67,7 +67,7 @@ export default function RegisterPage() {
           <h1 className="text-4xl font-bold">Join Birdie</h1>
           <p className="text-slate-500 font-medium mt-2">Client or professional — admin access is invite-only.</p>
         </div>
-        <form onSubmit={onSubmit} className="bg-white p-10 rounded-[2.5rem] border border-slate-200 shadow-xl space-y-5">
+        <form onSubmit={onSubmit} className="bg-white p-10 rounded-[2.125rem] border border-slate-200 shadow-xl space-y-5">
           <div className="grid grid-cols-2 gap-3">
             <button
               type="button"

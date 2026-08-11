@@ -102,7 +102,7 @@ export default function HomePage() {
           ].map((stat) => (
             <div
               key={stat.label}
-              className="bg-white p-7 md:p-8 rounded-[2rem] border border-slate-200/80 shadow-lg shadow-slate-200/40 flex items-center justify-between hover-lift"
+              className="bg-white p-7 md:p-8 rounded-[1.75rem] border border-slate-200/80 shadow-lg shadow-slate-200/40 flex items-center justify-between hover-lift"
             >
               <div className="space-y-1">
                 <p className="text-xl md:text-2xl font-bold text-[#0A0A0A] tracking-tight">{stat.value}</p>
@@ -130,7 +130,7 @@ export default function HomePage() {
             <Reveal key={cat}>
               <Link
                 to={`/professionals?category=${encodeURIComponent(cat)}`}
-                className="group block bg-white rounded-[2rem] border border-slate-200 overflow-hidden hover-lift hover:border-[#660033]/25 hover:shadow-xl hover:shadow-[#660033]/5 transition-all"
+                className="group block bg-white rounded-[1.75rem] border border-slate-200 overflow-hidden hover-lift hover:border-[#660033]/25 hover:shadow-xl hover:shadow-[#660033]/5 transition-all"
               >
                 <div className="aspect-[16/10] overflow-hidden bg-[#F1F5F9]">
                   <img
@@ -194,7 +194,7 @@ export default function HomePage() {
             </div>
           </Reveal>
           <Reveal>
-            <div className="aspect-[4/3] rounded-[2.5rem] overflow-hidden border border-slate-200 shadow-xl shadow-slate-200/50">
+            <div className="aspect-[4/3] rounded-[2.125rem] overflow-hidden border border-slate-200 shadow-xl shadow-slate-200/50">
               <img src={IMAGES.process} alt="Birdie hiring process" className="w-full h-full object-cover" />
             </div>
           </Reveal>
@@ -204,7 +204,7 @@ export default function HomePage() {
       {/* PROVIDERS */}
       <section className="w-full px-6 md:w-[90vw] md:mx-auto py-24 md:py-28 grid grid-cols-1 lg:grid-cols-2 gap-14 items-center">
         <Reveal>
-          <div className="aspect-[4/3] rounded-[2.5rem] overflow-hidden border border-slate-200 bg-[#F1F5F9]">
+          <div className="aspect-[4/3] rounded-[2.125rem] overflow-hidden border border-slate-200 bg-[#F1F5F9]">
             <img src={IMAGES.provider} alt="Domestic professional" className="w-full h-full object-cover" />
           </div>
         </Reveal>
@@ -253,7 +253,7 @@ export default function HomePage() {
             </Link>
           </Reveal>
           <Reveal>
-            <div className="w-full md:w-96 h-80 rounded-[2.5rem] overflow-hidden border border-slate-100">
+            <div className="w-full md:w-96 h-80 rounded-[2.125rem] overflow-hidden border border-slate-100">
               <img src={IMAGES.story} alt="Birdie story" className="w-full h-full object-cover" />
             </div>
           </Reveal>
@@ -277,7 +277,7 @@ export default function HomePage() {
             <Reveal key={post.id}>
               <Link
                 to={`/blog/${post.slug}`}
-                className="block bg-white border border-slate-200 rounded-[2rem] overflow-hidden hover-lift hover:border-[#660033]/25 transition-all h-full"
+                className="block bg-white border border-slate-200 rounded-[1.75rem] overflow-hidden hover-lift hover:border-[#660033]/25 transition-all h-full"
               >
                 <div className="h-48 bg-[#F1F5F9]">
                   <img
@@ -318,7 +318,7 @@ export default function HomePage() {
       {/* FINAL CTA */}
       <section className="w-full px-6 md:w-[90vw] md:mx-auto py-20 md:py-24">
         <Reveal>
-          <div className="bg-[#660033] rounded-[3rem] md:rounded-[4rem] p-12 md:p-20 text-center space-y-8 text-white relative overflow-hidden">
+          <div className="bg-[#660033] rounded-[2.5rem] md:rounded-[3.5rem] p-12 md:p-20 text-center space-y-8 text-white relative overflow-hidden">
             <div className="absolute top-0 right-0 w-72 h-72 bg-white/5 rounded-full -mr-36 -mt-36" />
             <div className="relative z-10 space-y-8">
               <h2 className="text-3xl md:text-5xl font-bold tracking-tight">
@@ -329,16 +329,12 @@ export default function HomePage() {
               </p>
               <div className="flex flex-col sm:flex-row justify-center gap-4">
                 <Link to="/hire">
-                  <Button size="lg" className="bg-white text-[#660033] hover:bg-[#F8FAFB] shadow-none w-full sm:w-auto">
+                  <Button size="lg" variant="inverse" className="w-full sm:w-auto">
                     Hire a Professional
                   </Button>
                 </Link>
                 <Link to="/register?role=professional">
-                  <Button
-                    size="lg"
-                    variant="secondary"
-                    className="bg-transparent border-white/30 text-white hover:bg-white/10 w-full sm:w-auto"
-                  >
+                  <Button size="lg" variant="outlineOnBrand" className="w-full sm:w-auto">
                     Join our network
                   </Button>
                 </Link>

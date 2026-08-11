@@ -44,14 +44,14 @@ export default function AdminDashboard() {
             value: formatNaira(settings?.consultation_fee_ngn || 10000),
           },
         ].map((s) => (
-          <div key={s.label} className="bg-white border border-slate-200 rounded-[2rem] p-6">
+          <div key={s.label} className="bg-white border border-slate-200 rounded-[1.75rem] p-6">
             <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">{s.label}</p>
             <p className="text-3xl font-black mt-2">{s.value}</p>
           </div>
         ))}
       </div>
 
-      <section className="bg-white border border-slate-200 rounded-[2rem] p-6 space-y-4">
+      <section className="bg-white border border-slate-200 rounded-[1.75rem] p-6 space-y-4">
         <div className="flex justify-between items-center">
           <h2 className="text-xl font-bold">Vetting queue</h2>
           <Link to="/app/vetting" className="text-sm font-bold text-[#660033]">
@@ -93,7 +93,7 @@ export default function AdminDashboard() {
         {pendingPros.length === 0 && <p className="text-slate-400 italic">Queue clear.</p>}
       </section>
 
-      <section className="bg-white border border-slate-200 rounded-[2rem] p-6 space-y-4">
+      <section className="bg-white border border-slate-200 rounded-[1.75rem] p-6 space-y-4">
         <div className="flex justify-between">
           <h2 className="text-xl font-bold">Payout requests</h2>
           <Link to="/app/payouts" className="text-sm font-bold text-[#660033]">

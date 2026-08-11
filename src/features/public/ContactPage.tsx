@@ -39,13 +39,13 @@ export default function ContactPage() {
             Support: {settings?.support_email || 'support@birdie.ng'} · Consultation fee: ₦
             {fee.toLocaleString()}
           </p>
-          <div className="aspect-[4/3] rounded-[2.5rem] overflow-hidden border border-slate-200">
+          <div className="aspect-[4/3] rounded-[2.125rem] overflow-hidden border border-slate-200">
             <img src={IMAGES.contact} alt="Contact Birdie" className="w-full h-full object-cover" />
           </div>
         </div>
 
         <form
-          className="bg-white border border-slate-200 rounded-[2.5rem] p-8 md:p-10 space-y-5 shadow-xl shadow-slate-200/40"
+          className="bg-white border border-slate-200 rounded-[2.125rem] p-8 md:p-10 space-y-5 shadow-xl shadow-slate-200/40"
           onSubmit={(e) => {
             e.preventDefault();
             setSent(true);

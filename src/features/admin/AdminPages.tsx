@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/app/AuthProvider';
 import { dataService } from '@/services/dataService';
-import { ProfessionalProfile, ProfessionalStatus, WithdrawalRequest, BlogPost } from '@/types';
+import { ProfessionalProfile, ProfessionalStatus, WithdrawalRequest, BlogPost, UserRole } from '@/types';
 import { Button } from '@/components/ui/Button';
 import { Input, Label, TextArea } from '@/components/ui/Input';
 import { formatNaira } from '@/lib/utils';
 import { supabase } from '@/lib/supabase';
+import AccountPage from '@/features/client/AccountPage';
 
 export function VettingPage() {
   const [pros, setPros] = useState<ProfessionalProfile[]>([]);
@@ -51,7 +52,7 @@ export function VettingPage() {
         notification (wire Resend for email — see ADMIN_SETUP).
       </p>
       {pros.map((pro) => (
-        <div key={pro.id} className="bg-white border border-slate-200 rounded-[2rem] p-6 space-y-4">
+        <div key={pro.id} className="bg-white border border-slate-200 rounded-[1.75rem] p-6 space-y-4">
           <div className="flex flex-col md:flex-row md:items-start justify-between gap-3">
             <div className="space-y-1">
               <p className="font-bold text-lg">{pro.fullName || pro.userId}</p>
@@ -254,41 +255,61 @@ export function SettingsPage() {
     }
   }, [settings]);
 
-  const isStaff = user?.role === 'admin' || user?.role === 'operations';
+  const isStaff = user?.role === UserRole.ADMIN || user?.role === UserRole.OPERATIONS;
+  const isClient = user?.role === UserRole.CLIENT;
+  const isPro = user?.role === UserRole.PROFESSIONAL;
+
+  if (isClient || isPro) {
+    return <AccountPage />;
+  }
 
   return (
-    <div className="space-y-6 max-w-xl">
-      <h1 className="text-3xl font-bold">Settings</h1>
+    <div className="w-full space-y-8">
+      <div className="space-y-2">
+        <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#660033]">Settings</p>
+        <h1 className="text-3xl font-bold text-[#0A0A0A]">Platform settings</h1>
+        <p className="text-sm text-[#615A5C] font-medium max-w-2xl">
+          Tune consultation fees, commission, and escrow release windows for the Birdie marketplace.
+        </p>
+      </div>
       {isStaff ? (
-        <div className="bg-white border border-slate-200 rounded-[2rem] p-6 space-y-4">
-          <div className="space-y-1.5">
-            <Label>Consultation fee (NGN, once per hire)</Label>
-            <Input value={fee} onChange={(e) => setFee(e.target.value)} />
+        <div className="grid lg:grid-cols-[1.15fr_0.85fr] gap-6 items-start">
+          <div className="bg-white border border-slate-200 rounded-[1.75rem] p-6 space-y-4">
+            <div className="space-y-1.5">
+              <Label>Consultation fee (NGN, once per hire)</Label>
+              <Input value={fee} onChange={(e) => setFee(e.target.value)} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Commission rate (%)</Label>
+              <Input value={commission} onChange={(e) => setCommission(e.target.value)} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Escrow release days</Label>
+              <Input value={escrowDays} onChange={(e) => setEscrowDays(e.target.value)} />
+            </div>
+            <Button
+              onClick={async () => {
+                await dataService.updatePlatformSettings({
+                  consultation_fee_ngn: Number(fee),
+                  commission_rate: Number(commission),
+                  escrow_release_days: Number(escrowDays),
+                });
+                await refresh();
+                alert('Settings saved');
+              }}
+            >
+              Save settings
+            </Button>
           </div>
-          <div className="space-y-1.5">
-            <Label>Commission rate (%)</Label>
-            <Input value={commission} onChange={(e) => setCommission(e.target.value)} />
-          </div>
-          <div className="space-y-1.5">
-            <Label>Escrow release days</Label>
-            <Input value={escrowDays} onChange={(e) => setEscrowDays(e.target.value)} />
-          </div>
-          <Button
-            onClick={async () => {
-              await dataService.updatePlatformSettings({
-                consultation_fee_ngn: Number(fee),
-                commission_rate: Number(commission),
-                escrow_release_days: Number(escrowDays),
-              });
-              await refresh();
-              alert('Settings saved');
-            }}
-          >
-            Save settings
-          </Button>
+          <aside className="bg-[#F8FAFB] border border-slate-200 rounded-[1.75rem] p-6 space-y-2">
+            <p className="text-xs font-bold uppercase tracking-widest text-[#660033]">Note</p>
+            <p className="text-sm text-[#615A5C] font-medium leading-relaxed">
+              Changes apply to new hires. Existing funded jobs keep the economics locked at creation time.
+            </p>
+          </aside>
         </div>
       ) : (
-        <div className="bg-white border border-slate-200 rounded-[2rem] p-6 space-y-2">
+        <div className="bg-white border border-slate-200 rounded-[1.75rem] p-6 space-y-2 max-w-xl">
           <p className="font-bold">{user?.name}</p>
           <p className="text-slate-500 text-sm">{user?.email}</p>
           <p className="text-xs font-bold uppercase text-slate-400">{user?.role}</p>
@@ -313,7 +334,7 @@ export function CmsPage() {
   return (
     <div className="space-y-8">
       <h1 className="text-3xl font-bold">Content CMS</h1>
-      <div className="bg-white border border-slate-200 rounded-[2rem] p-6 space-y-4 max-w-2xl">
+      <div className="bg-white border border-slate-200 rounded-[1.75rem] p-6 space-y-4 max-w-2xl">
         <div className="space-y-1.5">
           <Label>Title</Label>
           <Input value={title} onChange={(e) => setTitle(e.target.value)} />
@@ -361,7 +382,7 @@ export function CommunicationsPage() {
   return (
     <div className="space-y-6 max-w-2xl">
       <h1 className="text-3xl font-bold">Communications hub</h1>
-      <div className="bg-white border border-slate-200 rounded-[2rem] p-8 space-y-4">
+      <div className="bg-white border border-slate-200 rounded-[1.75rem] p-8 space-y-4">
         <p className="text-slate-600 font-medium leading-relaxed">
           Templates and triggers are stored in Supabase (`communication_templates`, `communication_logs`). Wire a
           transactional provider (Resend/Postmark) in Edge Functions for production sends.
@@ -376,17 +397,6 @@ export function CommunicationsPage() {
           In-app notifications are live via the notifications table.
         </p>
       </div>
-    </div>
-  );
-}
-
-export function MessagesInboxPage() {
-  return (
-    <div className="space-y-4">
-      <h1 className="text-3xl font-bold">Messages</h1>
-      <p className="text-slate-500 font-medium">
-        Open a hire from My Hires to chat in the request thread. Realtime updates use Supabase channels.
-      </p>
     </div>
   );
 }

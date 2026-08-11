@@ -110,6 +110,8 @@ export interface User {
   phone: string;
   status: UserStatus;
   emailVerified: boolean;
+  avatarUrl?: string;
+  deletedAt?: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -177,6 +179,13 @@ export interface ProfessionalProfile {
   onboardingStep?: string;
   assessmentCompletedAt?: string | null;
   attitudeAnswers?: Record<string, string>;
+  gender?: string;
+  indicativeRateNgn?: number | null;
+  rateUnit?: 'monthly' | 'daily' | 'hourly';
+  yearsExperience?: number;
+  workType?: '' | 'live_in' | 'live_out' | 'part_time' | 'flexible';
+  languages?: string[];
+  skills?: string[];
 }
 
 export interface ProfessionalDocument {

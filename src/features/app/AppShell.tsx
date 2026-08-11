@@ -1,4 +1,5 @@
-import { NavLink, Outlet, Navigate, useLocation } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { NavLink, Outlet, Navigate, Link, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard,
   Briefcase,
@@ -9,14 +10,44 @@ import {
   Megaphone,
   LogOut,
   Loader2,
+  Search,
+  Bell,
+  User,
+  Calendar,
+  Star,
+  CreditCard,
+  MoreHorizontal,
   MessageSquare,
+  type LucideIcon,
 } from 'lucide-react';
 import { useAuth } from '@/app/AuthProvider';
 import { UserRole } from '@/types';
+import { IMAGES } from '@/data/images';
+
+type NavItem = {
+  to: string;
+  icon: LucideIcon;
+  label: string;
+  end?: boolean;
+};
 
 export default function AppShell() {
-  const { status, user, proProfile, signOut } = useAuth();
+  const { status, user, proProfile, blockedReason, signOut } = useAuth();
   const location = useLocation();
+  const [moreOpen, setMoreOpen] = useState(false);
+
+  useEffect(() => {
+    setMoreOpen(false);
+  }, [location.pathname]);
+
+  useEffect(() => {
+    if (!moreOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setMoreOpen(false);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [moreOpen]);
 
   if (status === 'loading') {
     return (
@@ -31,12 +62,34 @@ export default function AppShell() {
     );
   }
 
+  if (status === 'blocked') {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-6 bg-[#F8FAFB]">
+        <div className="max-w-md bg-white border border-slate-200 rounded-[1.75rem] p-10 text-center space-y-4 shadow-xl">
+          <div className="w-12 h-12 mx-auto rounded-xl bg-[#660033] text-white font-bold text-xl flex items-center justify-center">
+            B
+          </div>
+          <h1 className="text-2xl font-bold text-[#0A0A0A]">Account unavailable</h1>
+          <p className="text-sm text-[#615A5C] font-medium">{blockedReason}</p>
+          <button
+            type="button"
+            onClick={() => signOut()}
+            className="text-sm font-bold text-[#660033]"
+          >
+            Sign out
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   if (status !== 'authenticated' || !user) {
     return <Navigate to="/login" replace />;
   }
 
   const isStaff = user.role === UserRole.ADMIN || user.role === UserRole.OPERATIONS;
   const isPro = user.role === UserRole.PROFESSIONAL;
+  const isClient = user.role === UserRole.CLIENT;
   const needsAssessment = isPro && proProfile && !proProfile.assessmentCompletedAt;
   const onAssessmentRoute =
     location.pathname.includes('/assessment') || location.pathname.includes('/onboarding');
@@ -45,7 +98,7 @@ export default function AppShell() {
     return <Navigate to="/app/assessment" replace />;
   }
 
-  const links = isStaff
+  const links: NavItem[] = isStaff
     ? [
         { to: '/app', icon: LayoutDashboard, label: 'Ops hub', end: true },
         { to: '/app/vetting', icon: Users, label: 'Vetting' },
@@ -59,25 +112,61 @@ export default function AppShell() {
       ? [
           { to: '/app', icon: LayoutDashboard, label: 'Dashboard', end: true },
           { to: '/app/hires', icon: Briefcase, label: 'Jobs' },
-          { to: '/app/wallet', icon: Wallet, label: 'Wallet' },
-          { to: '/app/messages', icon: MessageSquare, label: 'Messages' },
+          { to: '/app/calendar', icon: Calendar, label: 'Calendar' },
+          { to: '/app/reviews', icon: Star, label: 'Reviews' },
+          { to: '/app/profile', icon: User, label: 'Profile' },
+          { to: '/app/wallet', icon: CreditCard, label: 'Payments' },
           { to: '/app/settings', icon: Settings, label: 'Settings' },
         ]
       : [
-          { to: '/app', icon: LayoutDashboard, label: 'Home', end: true },
-          { to: '/app/hires', icon: Briefcase, label: 'My hires' },
-          { to: '/app/messages', icon: MessageSquare, label: 'Messages' },
-          { to: '/app/settings', icon: Settings, label: 'Settings' },
+          { to: '/app', icon: Search, label: 'Find', end: true },
+          { to: '/app/hires', icon: Briefcase, label: 'Hires' },
+          { to: '/app/inbox', icon: Bell, label: 'Inbox' },
+          { to: '/app/account', icon: User, label: 'Account' },
         ];
+
+  const primaryLinks: NavItem[] = isStaff
+    ? links.slice(0, 4)
+    : isPro
+      ? [
+          links[0],
+          links[1],
+          links[2],
+          links[5], // Payments
+        ]
+      : links;
+
+  const moreLinks: NavItem[] = isStaff
+    ? links.slice(4)
+    : isPro
+      ? [
+          links[3], // Reviews
+          links[4], // Profile
+          links[6], // Settings
+          { to: '/app/inbox', icon: MessageSquare, label: 'Messages' },
+        ]
+      : [];
+
+  const moreActive = moreLinks.some((l) =>
+    l.end ? location.pathname === l.to : location.pathname === l.to || location.pathname.startsWith(`${l.to}/`)
+  );
+
+  const displayName = user.name || user.firstName || 'User';
+  const avatarSrc = user.avatarUrl || proProfile?.avatarUrl || IMAGES.avatarFallback;
+  const showProfileFooter = isClient || isPro;
 
   return (
     <div className="min-h-screen flex bg-[#F8FAFB]">
-      <aside className="hidden md:flex w-64 flex-col border-r border-slate-200 bg-white p-6 gap-8">
+      <aside className="hidden md:flex w-64 shrink-0 flex-col h-screen sticky top-0 border-r border-slate-200 bg-white p-6 gap-8 overflow-y-auto">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-[#660033] text-white font-bold flex items-center justify-center">B</div>
+          <div className="w-10 h-10 rounded-xl bg-[#660033] text-white font-bold flex items-center justify-center">
+            B
+          </div>
           <div>
             <p className="font-bold text-slate-900">Birdie</p>
-            <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">{user.role}</p>
+            {isStaff && (
+              <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">{user.role}</p>
+            )}
           </div>
         </div>
         <nav className="flex-1 space-y-1">
@@ -87,7 +176,7 @@ export default function AppShell() {
               to={l.to}
               end={l.end}
               className={({ isActive }) =>
-                `flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold transition-colors ${
+                `flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-colors ${
                   isActive ? 'bg-[#660033]/5 text-[#660033]' : 'text-slate-500 hover:bg-slate-50'
                 }`
               }
@@ -96,32 +185,74 @@ export default function AppShell() {
             </NavLink>
           ))}
         </nav>
-        <button
-          onClick={() => signOut()}
-          className="flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold text-slate-400 hover:text-rose-600"
-        >
-          <LogOut size={18} /> Sign out
-        </button>
+
+        {showProfileFooter ? (
+          <div className="space-y-3 border-t border-slate-100 pt-4">
+            <Link
+              to={isClient ? '/app/account' : '/app/settings'}
+              className="flex items-center gap-3 px-2 py-2 rounded-xl hover:bg-slate-50"
+            >
+              <img
+                src={avatarSrc}
+                alt=""
+                className="w-10 h-10 rounded-full object-cover border border-slate-200"
+              />
+              <div className="min-w-0">
+                <p className="font-bold text-sm text-[#0A0A0A] truncate">{displayName}</p>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
+                  {isClient ? 'Client' : 'Professional'}
+                </p>
+              </div>
+            </Link>
+            <button
+              type="button"
+              onClick={() => signOut()}
+              className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold text-[#660033] hover:bg-[#660033]/5 w-full"
+            >
+              <LogOut size={18} /> Logout
+            </button>
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => signOut()}
+            className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold text-slate-400 hover:text-rose-600"
+          >
+            <LogOut size={18} /> Sign out
+          </button>
+        )}
       </aside>
 
-      <div className="flex-1 flex flex-col min-w-0">
-        <header className="md:hidden flex items-center justify-between px-4 h-16 border-b border-slate-200 bg-white">
-          <p className="font-bold">Birdie</p>
-          <button onClick={() => signOut()} className="text-xs font-bold text-slate-400">
-            Sign out
-          </button>
+      <div className="flex-1 flex flex-col min-w-0 min-h-screen">
+        <header className="sticky top-0 z-30 flex items-center justify-between px-4 md:px-8 h-14 md:h-16 border-b border-slate-200 bg-white">
+          <p className="font-bold md:hidden">Birdie</p>
+          <div className="hidden md:block" />
+          {isClient || isPro ? (
+            <Link
+              to="/app/inbox"
+              className="ml-auto p-2 rounded-xl text-slate-400 hover:text-[#660033] hover:bg-slate-50"
+              aria-label={isClient ? 'Inbox' : 'Messages'}
+            >
+              <Bell size={20} />
+            </Link>
+          ) : (
+            <button type="button" onClick={() => signOut()} className="md:hidden text-xs font-bold text-slate-400">
+              Sign out
+            </button>
+          )}
         </header>
-        <main className="flex-1 p-4 md:p-8 overflow-auto">
+        <main className="flex-1 p-4 md:p-8 pb-24 md:pb-8">
           <Outlet />
         </main>
-        <nav className="md:hidden flex border-t border-slate-200 bg-white overflow-x-auto">
-          {links.slice(0, 4).map((l) => (
+
+        <nav className="md:hidden fixed bottom-0 inset-x-0 z-40 flex border-t border-slate-200 bg-white pb-[env(safe-area-inset-bottom)]">
+          {primaryLinks.map((l) => (
             <NavLink
               key={l.to}
               to={l.to}
               end={l.end}
               className={({ isActive }) =>
-                `flex-1 min-w-[72px] py-3 text-center text-[10px] font-bold uppercase ${
+                `flex-1 min-w-0 py-3 text-center text-[10px] font-bold uppercase ${
                   isActive ? 'text-[#660033]' : 'text-slate-400'
                 }`
               }
@@ -130,7 +261,61 @@ export default function AppShell() {
               {l.label}
             </NavLink>
           ))}
+          {moreLinks.length > 0 && (
+            <button
+              type="button"
+              onClick={() => setMoreOpen(true)}
+              className={`flex-1 min-w-0 py-3 text-center text-[10px] font-bold uppercase ${
+                moreActive || moreOpen ? 'text-[#660033]' : 'text-slate-400'
+              }`}
+            >
+              <MoreHorizontal size={18} className="mx-auto mb-1" />
+              More
+            </button>
+          )}
         </nav>
+
+        {moreOpen && moreLinks.length > 0 && (
+          <div className="md:hidden fixed inset-0 z-50">
+            <button
+              type="button"
+              className="absolute inset-0 bg-black/40"
+              aria-label="Close menu"
+              onClick={() => setMoreOpen(false)}
+            />
+            <div className="absolute bottom-0 inset-x-0 bg-white rounded-t-[1.75rem] border-t border-slate-200 p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] shadow-xl space-y-1">
+              <div className="w-10 h-1 rounded-full bg-slate-200 mx-auto mb-3" />
+              <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 px-3 pb-2">More</p>
+              {moreLinks.map((l) => (
+                <NavLink
+                  key={l.to}
+                  to={l.to}
+                  end={l.end}
+                  onClick={() => setMoreOpen(false)}
+                  className={({ isActive }) =>
+                    `flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold ${
+                      isActive ? 'bg-[#660033]/5 text-[#660033]' : 'text-slate-600 hover:bg-slate-50'
+                    }`
+                  }
+                >
+                  <l.icon size={18} /> {l.label}
+                </NavLink>
+              ))}
+              {isStaff && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMoreOpen(false);
+                    signOut();
+                  }}
+                  className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold text-[#660033] w-full"
+                >
+                  <LogOut size={18} /> Sign out
+                </button>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

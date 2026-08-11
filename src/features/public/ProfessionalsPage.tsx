@@ -81,7 +81,7 @@ export default function ProfessionalsPage() {
           return (
             <div
               key={pro.id}
-              className="bg-white border border-slate-200 rounded-[2rem] overflow-hidden hover-lift hover:border-[#660033]/25 transition-all flex flex-col"
+              className="bg-white border border-slate-200 rounded-[1.75rem] overflow-hidden hover-lift hover:border-[#660033]/25 transition-all flex flex-col"
             >
               <div className="h-48 bg-[#F1F5F9] relative">
                 <img
@@ -145,7 +145,7 @@ export default function ProfessionalsPage() {
       </div>
 
       {filtered.length === 0 && (
-        <div className="py-20 text-center bg-white rounded-[2rem] border border-dashed border-slate-200">
+        <div className="py-20 text-center bg-white rounded-[1.75rem] border border-dashed border-slate-200">
           <p className="text-[#615A5C] font-medium">No professionals match these filters yet.</p>
         </div>
       )}

@@ -24,7 +24,7 @@ export function BlogArchive() {
           <Link
             key={post.id}
             to={`/blog/${post.slug}`}
-            className="bg-white border border-slate-200 rounded-[2rem] overflow-hidden hover-lift hover:border-[#660033]/25 transition-all"
+            className="bg-white border border-slate-200 rounded-[1.75rem] overflow-hidden hover-lift hover:border-[#660033]/25 transition-all"
           >
             <div className="h-48 bg-[#F1F5F9]">
               <img
@@ -80,7 +80,7 @@ export function BlogSingle() {
       <p className="text-slate-400 text-sm font-bold uppercase tracking-widest">
         {post.author} · {post.date}
       </p>
-      <div className="aspect-[21/9] rounded-[2rem] overflow-hidden bg-[#F1F5F9]">
+      <div className="aspect-[21/9] rounded-[1.75rem] overflow-hidden bg-[#F1F5F9]">
         <img src={post.imageUrl || IMAGES.blogCover} alt="" className="w-full h-full object-cover" />
       </div>
       <div className="text-lg text-[#615A5C] font-medium leading-relaxed whitespace-pre-wrap">

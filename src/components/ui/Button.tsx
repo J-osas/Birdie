@@ -2,7 +2,7 @@ import React from 'react';
 import { cn } from '@/lib/utils';
 
 type Props = React.ButtonHTMLAttributes<HTMLButtonElement> & {
-  variant?: 'primary' | 'secondary' | 'ghost' | 'danger';
+  variant?: 'primary' | 'secondary' | 'ghost' | 'danger' | 'inverse' | 'outlineOnBrand';
   size?: 'sm' | 'md' | 'lg';
 };
 
@@ -18,11 +18,14 @@ export function Button({
     secondary: 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50',
     ghost: 'bg-transparent text-slate-500 hover:text-[#660033]',
     danger: 'bg-rose-600 text-white hover:bg-rose-700',
+    inverse: 'bg-white text-[#660033] shadow-none hover:bg-[#F8FAFB]',
+    outlineOnBrand:
+      'bg-transparent border border-white/40 text-white hover:bg-white/10 shadow-none',
   };
   const sizes = {
-    sm: 'px-4 py-2 text-sm rounded-xl',
-    md: 'px-6 py-3 text-sm rounded-2xl',
-    lg: 'px-10 py-5 text-lg rounded-[1.25rem]',
+    sm: 'px-4 py-2 text-sm rounded-lg',
+    md: 'px-6 py-3 text-sm rounded-xl',
+    lg: 'px-10 py-5 text-lg rounded-xl',
   };
 
   return (

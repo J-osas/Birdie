@@ -115,7 +115,8 @@ export default function HireFlowPage() {
       setStep(5);
     } catch (e) {
       console.error(e);
-      alert('Failed to create hire request. Please try again.');
+      const msg = e instanceof Error ? e.message : 'Failed to create hire request. Please try again.';
+      alert(msg);
     } finally {
       setLoading(false);
     }
@@ -152,7 +153,7 @@ export default function HireFlowPage() {
   if (done) {
     return (
       <div className="min-h-screen flex items-center justify-center p-6">
-        <div className="max-w-lg bg-white rounded-[3rem] border border-slate-200 p-12 text-center space-y-6 shadow-2xl">
+        <div className="max-w-lg bg-white rounded-[2.5rem] border border-slate-200 p-12 text-center space-y-6 shadow-2xl">
           <CheckCircle2 className="mx-auto text-emerald-500" size={56} />
           <h1 className="text-3xl font-bold">Consultation fee recorded</h1>
           <p className="text-slate-500 font-medium">
@@ -168,7 +169,7 @@ export default function HireFlowPage() {
 
   return (
     <div className="min-h-screen bg-[#F8FAFB] py-10 px-4">
-      <div className="max-w-3xl mx-auto bg-white border border-slate-200 rounded-[3rem] shadow-2xl overflow-hidden">
+      <div className="max-w-3xl mx-auto bg-white border border-slate-200 rounded-[2.5rem] shadow-2xl overflow-hidden">
         <div className="flex items-center justify-between px-8 py-6 border-b border-slate-100">
           <div>
             <p className="text-[10px] font-bold uppercase tracking-widest text-[#660033]">Hire flow</p>
@@ -337,7 +338,7 @@ export default function HireFlowPage() {
               <p className="text-slate-500 font-medium">
                 Charged once per hire request. After payment, Birdie aligns contract terms before escrow.
               </p>
-              <div className="bg-[#660033] text-white p-10 rounded-[2.5rem] space-y-4">
+              <div className="bg-[#660033] text-white p-10 rounded-[2.125rem] space-y-4">
                 <div className="flex justify-between text-sm opacity-70 font-bold uppercase tracking-widest">
                   <span>Service</span>
                   <span>Consultation</span>

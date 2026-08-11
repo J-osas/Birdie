@@ -253,7 +253,7 @@ export default function ProfessionalRegisterWizard() {
           ))}
         </div>
 
-        <div className="bg-white border border-slate-200 rounded-[2.5rem] p-8 md:p-10 shadow-xl space-y-5">
+        <div className="bg-white border border-slate-200 rounded-[2.125rem] p-8 md:p-10 shadow-xl space-y-5">
           {error && (
             <div className="p-4 bg-rose-50 text-rose-600 text-xs font-bold rounded-2xl flex gap-2">
               <AlertCircle size={16} /> {error}

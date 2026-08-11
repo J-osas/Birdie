@@ -32,20 +32,20 @@ export default function AboutPage() {
               ))}
             </div>
           </div>
-          <div className="aspect-[4/3] rounded-[2.5rem] overflow-hidden border border-slate-200">
+          <div className="aspect-[4/3] rounded-[2.125rem] overflow-hidden border border-slate-200">
             <img src={IMAGES.story} alt="About Birdie" className="w-full h-full object-cover" />
           </div>
         </div>
       </section>
 
       <section className="w-full px-6 md:w-[90vw] md:mx-auto pt-16 grid md:grid-cols-2 gap-6">
-        <div className="bg-white p-10 rounded-[2.5rem] border border-slate-200 space-y-4 hover-lift">
+        <div className="bg-white p-10 rounded-[2.125rem] border border-slate-200 space-y-4 hover-lift">
           <h2 className="text-2xl font-bold text-[#0A0A0A]">Our Mission</h2>
           <p className="text-lg text-[#615A5C] font-medium leading-relaxed">
             Connect households with trusted domestic professionals through transparent vetting, fair employment, and escrow-backed payments.
           </p>
         </div>
-        <div className="bg-[#660033] p-10 rounded-[2.5rem] text-white space-y-4 hover-lift">
+        <div className="bg-[#660033] p-10 rounded-[2.125rem] text-white space-y-4 hover-lift">
           <h2 className="text-2xl font-bold">Our Vision</h2>
           <p className="text-lg text-white/80 font-medium leading-relaxed">
             Affordable, dignified care for every home — delivered by trained, vetted workers with real safety nets.
@@ -77,7 +77,7 @@ export default function AboutPage() {
               icon: Scale,
             },
           ].map((item, i) => (
-            <div key={item.title} className="bg-white p-8 rounded-[2rem] border border-slate-200 space-y-4 hover-lift">
+            <div key={item.title} className="bg-white p-8 rounded-[1.75rem] border border-slate-200 space-y-4 hover-lift">
               <p className="text-sm font-bold text-[#E0B5CB]">0{i + 1}</p>
               <item.icon className="text-[#660033]" size={28} />
               <h3 className="text-xl font-bold text-[#0A0A0A]">{item.title}</h3>

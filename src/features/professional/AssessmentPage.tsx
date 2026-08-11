@@ -124,7 +124,7 @@ export default function AssessmentPage() {
         </div>
       </div>
 
-      <div className="bg-white border border-slate-200 rounded-[2.5rem] p-8 md:p-12 shadow-xl space-y-6">
+      <div className="bg-white border border-slate-200 rounded-[2.125rem] p-8 md:p-12 shadow-xl space-y-6">
         {phase === 'intro' && (
           <div className="space-y-6 text-center">
             <h1 className="text-3xl font-bold text-[#0A0A0A]">Skills assessment</h1>

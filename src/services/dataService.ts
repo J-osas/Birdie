@@ -21,6 +21,12 @@ import {
 } from '@/types';
 import { DEFAULT_CONSULTATION_FEE } from '@/data/constants';
 
+export type InboxThread = {
+  hire: HireRequest;
+  lastMessage: Message | null;
+  messageCount: number;
+};
+
 function mapPro(row: Record<string, unknown>): ProfessionalProfile {
   return {
     id: String(row.id),
@@ -55,6 +61,13 @@ function mapPro(row: Record<string, unknown>): ProfessionalProfile {
     onboardingStep: (row.onboarding_step as string) || undefined,
     assessmentCompletedAt: (row.assessment_completed_at as string) || null,
     attitudeAnswers: (row.attitude_answers as Record<string, string>) || undefined,
+    gender: (row.gender as string) || '',
+    indicativeRateNgn: row.indicative_rate_ngn != null ? Number(row.indicative_rate_ngn) : null,
+    rateUnit: (row.rate_unit as ProfessionalProfile['rateUnit']) || 'monthly',
+    yearsExperience: Number(row.years_experience || 0),
+    workType: (row.work_type as ProfessionalProfile['workType']) || '',
+    languages: Array.isArray(row.languages) ? (row.languages as string[]) : [],
+    skills: Array.isArray(row.skills) ? (row.skills as string[]) : [],
   };
 }
 
@@ -233,6 +246,13 @@ export const dataService = {
     if (updates.onboardingStep !== undefined) payload.onboarding_step = updates.onboardingStep;
     if (updates.assessmentCompletedAt !== undefined) payload.assessment_completed_at = updates.assessmentCompletedAt;
     if (updates.attitudeAnswers !== undefined) payload.attitude_answers = updates.attitudeAnswers;
+    if (updates.gender !== undefined) payload.gender = updates.gender;
+    if (updates.indicativeRateNgn !== undefined) payload.indicative_rate_ngn = updates.indicativeRateNgn;
+    if (updates.rateUnit !== undefined) payload.rate_unit = updates.rateUnit;
+    if (updates.yearsExperience !== undefined) payload.years_experience = updates.yearsExperience;
+    if (updates.workType !== undefined) payload.work_type = updates.workType;
+    if (updates.languages !== undefined) payload.languages = updates.languages;
+    if (updates.skills !== undefined) payload.skills = updates.skills;
 
     const { error } = await supabase
       .from('professional_profiles')
@@ -436,7 +456,9 @@ export const dataService = {
         professional_id: params.professionalId || null,
         service_category: params.serviceCategory,
         service_requested: params.serviceRequested,
-        preferred_start_date: params.preferredStartDate,
+        preferred_start_date: params.preferredStartDate.includes('T')
+          ? params.preferredStartDate
+          : `${params.preferredStartDate}T09:00:00`,
         location: params.location,
         requirements: params.requirements,
         notes: params.notes || '',
@@ -455,12 +477,13 @@ export const dataService = {
 
     if (params.consultationDate && params.consultationTime) {
       const scheduledAt = new Date(`${params.consultationDate}T${params.consultationTime}:00`);
-      await supabase.from('consultations').insert({
+      const { error: consultErr } = await supabase.from('consultations').insert({
         hire_request_id: data.id,
         scheduled_at: scheduledAt.toISOString(),
         fee_amount: settings.consultation_fee_ngn,
         payment_status: 'pending',
       });
+      if (consultErr) console.warn('Consultation insert failed', consultErr);
     }
 
     return mapHire(data);
@@ -636,6 +659,28 @@ export const dataService = {
     }));
   },
 
+  async getInboxThreads(
+    userId: string,
+    role: 'CLIENT' | 'PROFESSIONAL'
+  ): Promise<InboxThread[]> {
+    const hires = await this.getHireRequests(userId, role);
+    const threads = await Promise.all(
+      hires.map(async (hire) => {
+        const messages = await this.getMessages(hire.id);
+        return {
+          hire,
+          lastMessage: messages.length ? messages[messages.length - 1] : null,
+          messageCount: messages.length,
+        };
+      })
+    );
+    return threads.sort((a, b) => {
+      const aTime = a.lastMessage?.createdAt || a.hire.updatedAt || a.hire.createdAt;
+      const bTime = b.lastMessage?.createdAt || b.hire.updatedAt || b.hire.createdAt;
+      return new Date(bTime).getTime() - new Date(aTime).getTime();
+    });
+  },
+
   async sendMessage(hireRequestId: string, senderId: string, body: string) {
     const { error } = await supabase.from('messages').insert({
       hire_request_id: hireRequestId,
@@ -645,13 +690,19 @@ export const dataService = {
     if (error) throw error;
   },
 
-  async getReviewsForProfessional(professionalId: string): Promise<Review[]> {
-    const { data, error } = await supabase
+  async getReviewsForProfessional(
+    professionalId: string,
+    opts?: { forOwner?: boolean }
+  ): Promise<Review[]> {
+    let query = supabase
       .from('reviews')
       .select('*')
       .eq('professional_id', professionalId)
-      .eq('status', 'published')
       .order('created_at', { ascending: false });
+    if (!opts?.forOwner) {
+      query = query.eq('status', 'published');
+    }
+    const { data, error } = await query;
     if (error || !data) return [];
     return data.map((row) => ({
       id: row.id,

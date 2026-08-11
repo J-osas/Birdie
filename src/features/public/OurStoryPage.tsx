@@ -21,7 +21,7 @@ export default function OurStoryPage() {
               What inspired Birdie
             </h1>
           </div>
-          <div className="aspect-[21/9] rounded-[2.5rem] overflow-hidden bg-[#F1F5F9] border border-slate-100">
+          <div className="aspect-[21/9] rounded-[2.125rem] overflow-hidden bg-[#F1F5F9] border border-slate-100">
             <img src={IMAGES.story} alt="Birdie story" className="w-full h-full object-cover" />
           </div>
           <p className="text-2xl md:text-3xl text-[#0A0A0A] font-bold italic border-l-4 border-[#660033] pl-8">
@@ -53,7 +53,7 @@ export default function OurStoryPage() {
                 </div>
               ))}
             </div>
-            <div className="bg-white p-10 md:p-14 rounded-[2.5rem] border border-[#660033]/15 space-y-6">
+            <div className="bg-white p-10 md:p-14 rounded-[2.125rem] border border-[#660033]/15 space-y-6">
               <Quote className="text-[#660033] opacity-20" size={48} />
               <p className="text-xl md:text-2xl text-[#0A0A0A] leading-relaxed">
                 Birdie is where workers are trained, respected, and protected — and families hire with confidence. Dignity sits at the centre of every connection.

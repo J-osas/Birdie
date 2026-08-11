@@ -39,7 +39,7 @@ export default function LoginPage() {
           <h1 className="text-4xl font-bold text-slate-900">Welcome back</h1>
           <p className="text-slate-500 font-medium mt-2">Sign in to your Birdie account</p>
         </div>
-        <form onSubmit={onSubmit} className="bg-white p-10 rounded-[2.5rem] border border-slate-200 shadow-xl space-y-5">
+        <form onSubmit={onSubmit} className="bg-white p-10 rounded-[2.125rem] border border-slate-200 shadow-xl space-y-5">
           {error && (
             <div className="p-4 bg-rose-50 border border-rose-100 rounded-2xl text-rose-600 text-xs font-bold flex gap-2">
               <AlertCircle size={16} /> {error}

@@ -4,7 +4,7 @@ import { Briefcase, MessageSquare, Search, Shield } from 'lucide-react';
 import { useAuth } from '@/app/AuthProvider';
 import { dataService, InboxThread } from '@/services/dataService';
 import { UserRole } from '@/types';
-import { getStatusStyle } from '@/data/constants';
+import { getStatusStyle, statusLabel } from '@/data/constants';
 import { IMAGES } from '@/data/images';
 import { Button } from '@/components/ui/Button';
 
@@ -28,10 +28,10 @@ export default function InboxPage() {
   return (
     <div className="w-full space-y-8">
       <div className="space-y-2">
-        <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#660033]">Inbox</p>
-        <h1 className="text-3xl font-bold text-[#0A0A0A]">Messages</h1>
+        <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#660033]">Messages</p>
+        <h1 className="text-3xl font-bold text-[#0A0A0A]">Your messages</h1>
         <p className="text-sm text-[#615A5C] font-medium max-w-2xl">
-          Every hire gets its own thread. Open a conversation to coordinate schedules, scope, and updates.
+          Each request has its own chat. Open one to talk about dates, the work, or anything else.
         </p>
       </div>
 
@@ -39,7 +39,7 @@ export default function InboxPage() {
         <div className="space-y-3 min-w-0">
           {loading && (
             <div className="bg-white border border-slate-200 rounded-[1.75rem] p-8 text-sm text-slate-400 font-medium">
-              Loading threads…
+              One moment…
             </div>
           )}
 
@@ -48,7 +48,7 @@ export default function InboxPage() {
               const counterparty =
                 user?.role === UserRole.PROFESSIONAL
                   ? hire.clientName
-                  : hire.professionalName || 'Matching…';
+                  : hire.professionalName || 'We are finding someone…';
               return (
                 <Link
                   key={hire.id}
@@ -62,13 +62,13 @@ export default function InboxPage() {
                         {hire.serviceRequested || hire.serviceCategory}
                       </p>
                       <p className="text-sm text-[#615A5C] line-clamp-2 mt-2">
-                        {lastMessage?.body || 'No messages yet — open to start the thread.'}
+                        {lastMessage?.body || 'No messages yet. Open this to say hello.'}
                       </p>
                     </div>
                     <span
                       className={`shrink-0 px-2 py-1 rounded-full text-[9px] font-bold uppercase border ${getStatusStyle(hire.status)}`}
                     >
-                      {hire.status.replace(/_/g, ' ')}
+                      {statusLabel(hire.status)}
                     </span>
                   </div>
                   {lastMessage && (
@@ -86,29 +86,29 @@ export default function InboxPage() {
                 <MessageSquare size={28} />
               </div>
               <div className="space-y-2 max-w-md">
-                <h2 className="text-xl font-bold text-[#0A0A0A]">No conversations yet</h2>
+                <h2 className="text-xl font-bold text-[#0A0A0A]">No chats yet</h2>
                 <p className="text-[#615A5C] font-medium leading-relaxed">
                   {isClient
-                    ? 'Once you create a hire, messages with that professional (and Birdie ops) appear here. Threads stay tied to each job so nothing gets mixed up.'
-                    : 'When a client hires you, that job’s thread shows up here. Use it for schedules, scope, and updates — one conversation per job.'}
+                    ? 'Once you send a request, your chat with that person and with Birdie shows up here. Every request keeps its own chat, so nothing gets mixed up.'
+                    : 'When a family asks for your help, the chat for that job shows up here. Use it for dates and updates. One chat per job.'}
                 </p>
               </div>
               {isClient ? (
                 <div className="flex flex-wrap gap-3">
                   <Link to="/app">
-                    <Button>Find a professional</Button>
+                    <Button>Find someone to help</Button>
                   </Link>
                   <Link to="/app/hires">
-                    <Button variant="secondary">View hires</Button>
+                    <Button variant="secondary">See my requests</Button>
                   </Link>
                 </div>
               ) : (
                 <div className="flex flex-wrap gap-3">
                   <Link to="/app/hires">
-                    <Button>View jobs</Button>
+                    <Button>See my jobs</Button>
                   </Link>
                   <Link to="/app">
-                    <Button variant="secondary">Dashboard</Button>
+                    <Button variant="secondary">My home page</Button>
                   </Link>
                 </div>
               )}
@@ -121,32 +121,32 @@ export default function InboxPage() {
             <img src={IMAGES.process} alt="" className="w-full h-full object-cover" />
           </div>
           <div className="bg-white border border-slate-200 rounded-[1.75rem] p-6 space-y-5">
-            <h2 className="font-bold text-[#0A0A0A]">About Birdie Inbox</h2>
+            <h2 className="font-bold text-[#0A0A0A]">Good to know</h2>
             <ul className="space-y-4 text-sm text-[#615A5C] font-medium">
               <li className="flex gap-3">
                 <Briefcase className="shrink-0 text-[#660033] mt-0.5" size={18} />
-                <span>One thread per hire — keep job talk in one place.</span>
+                <span>One chat for each job, so it is easy to find what was said.</span>
               </li>
               <li className="flex gap-3">
                 <Shield className="shrink-0 text-[#660033] mt-0.5" size={18} />
-                <span>Prefer in-app messages for payment and schedule changes.</span>
+                <span>Talk about money and dates here, not outside. It keeps you safe.</span>
               </li>
               <li className="flex gap-3">
                 <Search className="shrink-0 text-[#660033] mt-0.5" size={18} />
                 <span>
                   {isClient
-                    ? 'Need someone new? Start from Find, then chat after the hire is created.'
-                    : 'New jobs land under Jobs first — open any hire to reply in its thread.'}
+                    ? 'Need someone new? Send a request first, then you can chat.'
+                    : 'New jobs show under My jobs first. Open one to reply in its chat.'}
                 </span>
               </li>
             </ul>
           </div>
           <div className="bg-[#F8FAFB] border border-slate-200 rounded-[1.75rem] p-6 space-y-2">
-            <p className="text-xs font-bold uppercase tracking-widest text-[#660033]">Tip</p>
+            <p className="text-xs font-bold uppercase tracking-widest text-[#660033]">One tip</p>
             <p className="text-sm text-[#615A5C] font-medium leading-relaxed">
               {isClient
-                ? 'After consultation payment, use the hire detail page to message and track status in one flow.'
-                : 'Reply promptly on active jobs — clear communication helps escrow release smoothly after completion.'}
+                ? 'Open the request itself to chat and see where things have reached, all on one page.'
+                : 'Reply quickly while a job is running. It helps us pay you as soon as the job is done.'}
             </p>
           </div>
         </aside>

@@ -20,12 +20,16 @@ import ProCalendarPage from '@/features/professional/ProCalendarPage';
 import ProReviewsPage from '@/features/professional/ProReviewsPage';
 import ProProfilePage from '@/features/professional/ProProfilePage';
 import WalletPage from '@/features/wallet/WalletPage';
+import PaymentReturnPage from '@/features/wallet/PaymentReturnPage';
+import InvoicePage from '@/features/wallet/InvoicePage';
+import ClientPaymentsPage from '@/features/client/ClientPaymentsPage';
 import TermsPage from '@/features/public/TermsPage';
 import FindPage from '@/features/client/FindPage';
 import InboxPage from '@/features/client/InboxPage';
 import AccountPage from '@/features/client/AccountPage';
 import { UserRole } from '@/types';
-import { CmsPage, CommunicationsPage, SettingsPage } from '@/features/admin/AdminPages';
+import { CmsPage, CommunicationsPage } from '@/features/admin/AdminPages';
+import SettingsPage from '@/features/admin/settings/SettingsPage';
 import AdminProfessionalsPage from '@/features/admin/AdminProfessionalsPage';
 import AdminClientsPage from '@/features/admin/AdminClientsPage';
 import AdminPaymentsPage from '@/features/admin/AdminPaymentsPage';
@@ -35,14 +39,16 @@ import AdminSecurityPage from '@/features/admin/AdminSecurityPage';
 
 function SettingsOrAccount() {
   const { user } = useAuth();
-  if (user?.role === UserRole.CLIENT) return <Navigate to="/app/account" replace />;
-  return <SettingsPage />;
+  const isStaff = user?.role === UserRole.ADMIN || user?.role === UserRole.OPERATIONS;
+  if (isStaff) return <SettingsPage />;
+  return <AccountPage />;
 }
 
 function PaymentsOrWallet() {
   const { user } = useAuth();
   const isStaff = user?.role === UserRole.ADMIN || user?.role === UserRole.OPERATIONS;
   if (isStaff) return <AdminPaymentsPage />;
+  if (user?.role === UserRole.CLIENT) return <ClientPaymentsPage />;
   return <Navigate to="/app/wallet" replace />;
 }
 
@@ -89,6 +95,8 @@ export default function AppRouter() {
             <Route path="profile" element={<ProProfilePage />} />
             <Route path="wallet" element={<WalletPage />} />
             <Route path="payments" element={<PaymentsOrWallet />} />
+            <Route path="payments/return" element={<PaymentReturnPage />} />
+            <Route path="invoices/:id" element={<InvoicePage />} />
             <Route path="payouts" element={<Navigate to="/app/payments" replace />} />
             <Route path="inbox" element={<InboxPage />} />
             <Route path="messages" element={<Navigate to="/app/inbox" replace />} />

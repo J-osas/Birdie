@@ -5,11 +5,15 @@ import { authService } from '@/services/authService';
 import { UserRole } from '@/types';
 import { Button } from '@/components/ui/Button';
 import { Input, Label } from '@/components/ui/Input';
+import { useAuth } from '@/app/AuthProvider';
 
 export default function RegisterPage() {
   const [params] = useSearchParams();
   const navigate = useNavigate();
+  const { settings } = useAuth();
   const wantPro = params.get('role') === 'professional';
+  const clientOpen = settings?.reg_client_enabled !== false;
+  const proOpen = settings?.reg_pro_enabled !== false;
   const [role, setRole] = useState<'client' | 'professional'>(wantPro ? 'professional' : 'client');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -23,7 +27,15 @@ export default function RegisterPage() {
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (role === 'professional') {
+      if (!proOpen) {
+        setError('Professional sign-up is closed right now.');
+        return;
+      }
       navigate('/register/professional');
+      return;
+    }
+    if (!clientOpen) {
+      setError('Family sign-up is closed right now.');
       return;
     }
     setLoading(true);
@@ -46,7 +58,12 @@ export default function RegisterPage() {
           <CheckCircle2 className="mx-auto text-emerald-500" size={48} />
           <h2 className="text-3xl font-bold">Welcome to Birdie</h2>
           <p className="text-slate-500 font-medium">Check your email if verification is required, then sign in.</p>
-          <Button className="w-full" onClick={() => navigate('/login')}>
+          <Button
+            className="w-full"
+            onClick={() =>
+              navigate(params.get('next') ? `/login?next=${encodeURIComponent(params.get('next') || '')}` : '/login')
+            }
+          >
             Go to login
           </Button>
         </div>
@@ -71,8 +88,9 @@ export default function RegisterPage() {
           <div className="grid grid-cols-2 gap-3">
             <button
               type="button"
+              disabled={!clientOpen}
               onClick={() => setRole('client')}
-              className={`p-4 rounded-2xl border-2 flex flex-col items-center gap-2 ${
+              className={`p-4 rounded-2xl border-2 flex flex-col items-center gap-2 disabled:opacity-40 ${
                 role === 'client' ? 'border-[#660033] bg-[#660033]/5 text-[#660033]' : 'border-slate-100 text-slate-400'
               }`}
             >
@@ -81,8 +99,9 @@ export default function RegisterPage() {
             </button>
             <button
               type="button"
+              disabled={!proOpen}
               onClick={() => setRole('professional')}
-              className={`p-4 rounded-2xl border-2 flex flex-col items-center gap-2 ${
+              className={`p-4 rounded-2xl border-2 flex flex-col items-center gap-2 disabled:opacity-40 ${
                 role === 'professional'
                   ? 'border-[#660033] bg-[#660033]/5 text-[#660033]'
                   : 'border-slate-100 text-slate-400'
@@ -92,13 +111,28 @@ export default function RegisterPage() {
               <span className="text-xs font-bold uppercase">I provide help</span>
             </button>
           </div>
+          {(!clientOpen || !proOpen) && (
+            <p className="text-sm font-medium text-[#615A5C] text-center">
+              {!clientOpen && !proOpen
+                ? 'Sign-up is closed right now.'
+                : !clientOpen
+                  ? 'Family sign-up is closed right now.'
+                  : 'Professional sign-up is closed right now.'}
+            </p>
+          )}
 
           {role === 'professional' ? (
             <>
               <p className="text-sm text-[#615A5C] font-medium text-center">
                 Professionals complete a multi-step profile, ID verification, then a skills assessment.
               </p>
-              <Button type="button" className="w-full" size="lg" onClick={() => navigate('/register/professional')}>
+              <Button
+                type="button"
+                className="w-full"
+                size="lg"
+                disabled={!proOpen}
+                onClick={() => navigate('/register/professional')}
+              >
                 Continue as professional
               </Button>
             </>
@@ -145,7 +179,10 @@ export default function RegisterPage() {
 
           <p className="text-center text-sm text-slate-500">
             Already have an account?{' '}
-            <Link to="/login" className="font-bold text-[#660033]">
+            <Link
+              to={params.get('next') ? `/login?next=${encodeURIComponent(params.get('next') || '')}` : '/login'}
+              className="font-bold text-[#660033]"
+            >
               Sign in
             </Link>
           </p>

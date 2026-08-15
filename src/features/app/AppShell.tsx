@@ -27,6 +27,8 @@ import {
 import { useAuth } from '@/app/AuthProvider';
 import { UserRole } from '@/types';
 import { IMAGES } from '@/data/images';
+import StaffNotificationsBell from '@/features/app/StaffNotificationsBell';
+import { getTheme, resolveTheme, type AppTheme } from '@/lib/theme';
 
 type NavItem = {
   to: string;
@@ -36,11 +38,34 @@ type NavItem = {
 };
 
 export default function AppShell() {
-  const { status, user, proProfile, blockedReason, signOut } = useAuth();
+  const { status, user, proProfile, blockedReason, signOut, settings } = useAuth();
   const location = useLocation();
   const [moreOpen, setMoreOpen] = useState(false);
   const [avatarMenuOpen, setAvatarMenuOpen] = useState(false);
+  const [theme, setThemeState] = useState<AppTheme>(() => getTheme());
+  const [resolvedTheme, setResolvedTheme] = useState<'light' | 'dark'>(() => resolveTheme(getTheme()));
   const avatarMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const onTheme = (e: Event) => {
+      const next = (e as CustomEvent<AppTheme>).detail || getTheme();
+      setThemeState(next);
+    };
+    window.addEventListener('birdie-theme', onTheme as EventListener);
+    return () => window.removeEventListener('birdie-theme', onTheme as EventListener);
+  }, []);
+
+  useEffect(() => {
+    if (theme !== 'system') {
+      setResolvedTheme(theme);
+      return;
+    }
+    const mq = window.matchMedia('(prefers-color-scheme: dark)');
+    const sync = () => setResolvedTheme(mq.matches ? 'dark' : 'light');
+    sync();
+    mq.addEventListener('change', sync);
+    return () => mq.removeEventListener('change', sync);
+  }, [theme]);
 
   useEffect(() => {
     setMoreOpen(false);
@@ -93,7 +118,7 @@ export default function AppShell() {
           <div className="w-12 h-12 mx-auto rounded-xl bg-[#660033] text-white font-bold text-xl flex items-center justify-center">
             B
           </div>
-          <h1 className="text-2xl font-bold text-[#0A0A0A]">Account unavailable</h1>
+          <h1 className="text-2xl font-bold text-[#0A0A0A]">You cannot sign in right now</h1>
           <p className="text-sm text-[#615A5C] font-medium">{blockedReason}</p>
           <button
             type="button"
@@ -114,6 +139,25 @@ export default function AppShell() {
   const isStaff = user.role === UserRole.ADMIN || user.role === UserRole.OPERATIONS;
   const isPro = user.role === UserRole.PROFESSIONAL;
   const isClient = user.role === UserRole.CLIENT;
+
+  if (settings?.admin_only_access && !isStaff) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-6 bg-[#F8FAFB]">
+        <div className="max-w-md bg-white border border-slate-200 rounded-[1.75rem] p-10 text-center space-y-4 shadow-xl">
+          <div className="w-12 h-12 mx-auto rounded-xl bg-[#660033] text-white font-bold text-xl flex items-center justify-center">
+            B
+          </div>
+          <h1 className="text-2xl font-bold text-[#0A0A0A]">Birdie is closed for now</h1>
+          <p className="text-sm text-[#615A5C] font-medium">
+            Only the Birdie team can sign in at the moment. Public pages are still open. Please try again later.
+          </p>
+          <button type="button" onClick={() => signOut()} className="text-sm font-bold text-[#660033]">
+            Sign out
+          </button>
+        </div>
+      </div>
+    );
+  }
   const needsAssessment = isPro && proProfile && !proProfile.assessmentCompletedAt;
   const onAssessmentRoute =
     location.pathname.includes('/assessment') || location.pathname.includes('/onboarding');
@@ -127,30 +171,31 @@ export default function AppShell() {
         { to: '/app', icon: LayoutDashboard, label: 'Overview', end: true },
         { to: '/app/professionals', icon: Users, label: 'Professionals' },
         { to: '/app/clients', icon: UserCircle, label: 'Clients' },
-        { to: '/app/hires', icon: Briefcase, label: 'Hire requests' },
-        { to: '/app/payments', icon: Wallet, label: 'Payments' },
+        { to: '/app/hires', icon: Briefcase, label: 'Requests' },
+        { to: '/app/payments', icon: Wallet, label: 'Money' },
         { to: '/app/admin/reviews', icon: Star, label: 'Reviews' },
-        { to: '/app/cms', icon: FileText, label: 'Content (CMS)' },
-        { to: '/app/communications', icon: Megaphone, label: 'Communications' },
+        { to: '/app/cms', icon: FileText, label: 'Website text' },
+        { to: '/app/communications', icon: Megaphone, label: 'Emails' },
         { to: '/app/analytics', icon: BarChart3, label: 'Analytics' },
         { to: '/app/settings', icon: Settings, label: 'Settings' },
         { to: '/app/security', icon: Shield, label: 'Security' },
       ]
     : isPro
       ? [
-          { to: '/app', icon: LayoutDashboard, label: 'Dashboard', end: true },
-          { to: '/app/hires', icon: Briefcase, label: 'Jobs' },
+          { to: '/app', icon: LayoutDashboard, label: 'Home', end: true },
+          { to: '/app/hires', icon: Briefcase, label: 'My jobs' },
           { to: '/app/calendar', icon: Calendar, label: 'Calendar' },
           { to: '/app/reviews', icon: Star, label: 'Reviews' },
-          { to: '/app/profile', icon: User, label: 'Profile' },
-          { to: '/app/wallet', icon: CreditCard, label: 'Payments' },
+          { to: '/app/profile', icon: User, label: 'My profile' },
+          { to: '/app/wallet', icon: CreditCard, label: 'My money' },
           { to: '/app/settings', icon: Settings, label: 'Settings' },
         ]
       : [
-          { to: '/app', icon: Search, label: 'Find', end: true },
-          { to: '/app/hires', icon: Briefcase, label: 'Hires' },
-          { to: '/app/inbox', icon: Bell, label: 'Inbox' },
-          { to: '/app/account', icon: User, label: 'Account' },
+          { to: '/app', icon: Search, label: 'Find help', end: true },
+          { to: '/app/hires', icon: Briefcase, label: 'My requests' },
+          { to: '/app/payments', icon: CreditCard, label: 'My payments' },
+          { to: '/app/inbox', icon: Bell, label: 'Messages' },
+          { to: '/app/account', icon: User, label: 'My details' },
         ];
 
   const primaryLinks: NavItem[] = isStaff
@@ -199,14 +244,14 @@ export default function AppShell() {
   const settingsTo = isClient ? '/app/account' : isStaff ? '/app/settings' : '/app/settings';
 
   return (
-    <div className="min-h-screen flex bg-[#F8FAFB]">
-      <aside className="hidden md:flex w-64 shrink-0 flex-col h-screen sticky top-0 border-r border-slate-200 bg-white p-6 gap-8 overflow-y-auto">
+    <div className="app-shell min-h-screen flex" data-theme={resolvedTheme}>
+      <aside className="hidden md:flex w-64 shrink-0 flex-col h-screen sticky top-0 border-r border-[var(--app-border)] bg-[var(--app-surface)] p-6 gap-8 overflow-y-auto">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-[#660033] text-white font-bold flex items-center justify-center">
             B
           </div>
           <div>
-            <p className="font-bold text-slate-900">Birdie</p>
+            <p className="font-bold text-[var(--app-ink)]">Birdie</p>
             {isStaff && (
               <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">{user.role}</p>
             )}
@@ -243,7 +288,7 @@ export default function AppShell() {
               <div className="min-w-0">
                 <p className="font-bold text-sm text-[#0A0A0A] truncate">{displayName}</p>
                 <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
-                  {isStaff ? 'Admin' : isClient ? 'Client' : 'Professional'}
+                  {isStaff ? 'Birdie team' : isClient ? 'Family' : 'Professional'}
                 </p>
               </div>
             </Link>
@@ -252,7 +297,7 @@ export default function AppShell() {
               onClick={() => signOut()}
               className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold text-[#660033] hover:bg-[#660033]/5 w-full"
             >
-              <LogOut size={18} /> Logout
+              <LogOut size={18} /> Sign out
             </button>
           </div>
         ) : (
@@ -267,17 +312,18 @@ export default function AppShell() {
       </aside>
 
       <div className="flex-1 flex flex-col min-w-0 min-h-screen">
-        <header className="sticky top-0 z-30 flex items-center justify-between px-4 md:px-8 h-14 md:h-16 border-b border-slate-200 bg-white">
+        <header className="sticky top-0 z-30 flex items-center justify-between px-4 md:px-8 h-14 md:h-16 border-b border-[var(--app-border)] bg-[var(--app-surface)]">
           <p className="font-bold md:hidden">Birdie</p>
           <div className="hidden md:block" />
           <div className="ml-auto flex items-center gap-1.5">
+            {user && <StaffNotificationsBell userId={user.id} role={user.role} />}
             {(isClient || isPro) && (
               <Link
                 to="/app/inbox"
                 className="p-2 rounded-xl text-slate-400 hover:text-[#660033] hover:bg-slate-50"
-                aria-label={isClient ? 'Inbox' : 'Messages'}
+                aria-label="Messages"
               >
-                <Bell size={20} />
+                <MessageSquare size={20} />
               </Link>
             )}
             <div className="relative md:hidden" ref={avatarMenuRef}>
@@ -300,7 +346,7 @@ export default function AppShell() {
                     onClick={() => setAvatarMenuOpen(false)}
                     className="flex items-center gap-3 px-4 py-2.5 text-sm font-bold text-slate-700 hover:bg-slate-50"
                   >
-                    <UserRound size={16} className="text-[#660033]" /> Edit profile
+                    <UserRound size={16} className="text-[#660033]" /> My details
                   </Link>
                   <Link
                     to={settingsTo}
@@ -317,27 +363,18 @@ export default function AppShell() {
                     }}
                     className="flex items-center gap-3 px-4 py-2.5 text-sm font-bold text-[#660033] hover:bg-[#660033]/5 w-full text-left"
                   >
-                    <LogOut size={16} /> Log out
+                    <LogOut size={16} /> Sign out
                   </button>
                 </div>
               )}
             </div>
-            {isStaff && (
-              <button
-                type="button"
-                onClick={() => signOut()}
-                className="hidden md:inline text-xs font-bold text-slate-400"
-              >
-                Sign out
-              </button>
-            )}
           </div>
         </header>
         <main className="flex-1 p-4 md:p-8 pb-24 md:pb-8">
           <Outlet />
         </main>
 
-        <nav className="md:hidden fixed bottom-0 inset-x-0 z-40 flex border-t border-slate-200 bg-white pb-[env(safe-area-inset-bottom)]">
+        <nav className="md:hidden fixed bottom-0 inset-x-0 z-40 flex border-t border-[var(--app-border)] bg-[var(--app-surface)] pb-[env(safe-area-inset-bottom)]">
           {primaryLinks.map((l) => (
             <NavLink
               key={l.to}
@@ -375,7 +412,7 @@ export default function AppShell() {
               aria-label="Close menu"
               onClick={() => setMoreOpen(false)}
             />
-            <div className="absolute bottom-0 inset-x-0 bg-white rounded-t-[1.75rem] border-t border-slate-200 p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] shadow-xl space-y-1">
+            <div className="absolute bottom-0 inset-x-0 bg-[var(--app-surface)] rounded-t-[1.75rem] border-t border-[var(--app-border)] p-4 pb-[calc(1rem+env(safe-area-inset-bottom))] shadow-xl space-y-1">
               <div className="w-10 h-1 rounded-full bg-slate-200 mx-auto mb-3" />
               <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 px-3 pb-2">More</p>
               {moreLinks.map((l) => (

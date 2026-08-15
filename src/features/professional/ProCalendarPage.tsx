@@ -4,7 +4,7 @@ import { Calendar as CalendarIcon, List, ChevronLeft, ChevronRight } from 'lucid
 import { useAuth } from '@/app/AuthProvider';
 import { dataService } from '@/services/dataService';
 import { HireRequest } from '@/types';
-import { getStatusStyle } from '@/data/constants';
+import { getStatusStyle, statusLabel } from '@/data/constants';
 import { IMAGES } from '@/data/images';
 import { Button } from '@/components/ui/Button';
 
@@ -190,7 +190,7 @@ export default function ProCalendarPage() {
                         <span
                           className={`px-2 py-1 h-fit rounded-full text-[9px] font-bold uppercase border ${getStatusStyle(job.status)}`}
                         >
-                          {job.status.replace(/_/g, ' ')}
+                          {statusLabel(job.status)}
                         </span>
                       </div>
                     </Link>
@@ -199,7 +199,7 @@ export default function ProCalendarPage() {
               ))}
               {listGroups.length === 0 && (
                 <div className="bg-white border border-dashed border-slate-200 rounded-[1.75rem] p-10 text-sm text-[#615A5C] font-medium">
-                  No scheduled jobs yet. Approved jobs with a start date appear here.
+                  Nothing booked yet. Once a job has a start date, it shows up here.
                 </div>
               )}
             </div>
@@ -228,13 +228,13 @@ export default function ProCalendarPage() {
                     <span
                       className={`px-2 py-1 h-fit rounded-full text-[9px] font-bold uppercase border ${getStatusStyle(job.status)}`}
                     >
-                      {job.status.replace(/_/g, ' ')}
+                      {statusLabel(job.status)}
                     </span>
                   </div>
                 </Link>
               ))}
               {selectedJobs.length === 0 && (
-                <p className="text-sm text-slate-400 font-medium">No jobs on this day.</p>
+                <p className="text-sm text-slate-400 font-medium">Nothing on this day.</p>
               )}
             </div>
           )}
@@ -247,11 +247,10 @@ export default function ProCalendarPage() {
           <div className="bg-white border border-slate-200 rounded-[1.75rem] p-6 space-y-3">
             <h2 className="font-bold text-[#0A0A0A]">How scheduling works</h2>
             <p className="text-sm text-[#615A5C] font-medium leading-relaxed">
-              Jobs appear when they are accepted or funded and have a preferred start date from the hire request.
-              Unscheduled pipeline items stay under Jobs.
+              Jobs show here once they are accepted and have a start date. Jobs without a date stay under Jobs.
             </p>
             <Link to="/app/hires" className="inline-block text-sm font-bold text-[#660033] underline underline-offset-4">
-              Open jobs pipeline
+              Open jobs
             </Link>
           </div>
           <div className="bg-[#F8FAFB] border border-slate-200 rounded-[1.75rem] p-6">

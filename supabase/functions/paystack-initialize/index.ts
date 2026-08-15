@@ -1,4 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.1';
+import { getAppSecret, getPaystackSecret } from '../_shared/getSecret.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -9,9 +10,10 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
 
   try {
-    const paystackSecret = Deno.env.get('PAYSTACK_SECRET_KEY');
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const admin = createClient(supabaseUrl, serviceKey);
+    const paystackSecret = await getPaystackSecret(admin);
     if (!paystackSecret) throw new Error('PAYSTACK_SECRET_KEY missing');
 
     const authHeader = req.headers.get('Authorization');
@@ -25,7 +27,6 @@ Deno.serve(async (req) => {
     } = await userClient.auth.getUser();
     if (!user) throw new Error('Unauthorized');
 
-    const admin = createClient(supabaseUrl, serviceKey);
     const body = await req.json();
     const hireRequestId = body.hireRequestId as string;
     const paymentType = body.paymentType as 'consultation' | 'escrow';
@@ -74,8 +75,10 @@ Deno.serve(async (req) => {
         amount: amountKobo,
         reference,
         currency: 'NGN',
-        metadata: { hireRequestId, paymentType },
-        callback_url: body.callbackUrl || undefined,
+        metadata: { hireRequestId, paymentType, referenceCode: hire.reference_code },
+        callback_url:
+          body.callbackUrl ||
+          `${(await getAppSecret(admin, 'SITE_URL')) || 'https://birdie-alpha.vercel.app'}/app/payments/return?hire=${hireRequestId}`,
       }),
     });
     const json = await res.json();

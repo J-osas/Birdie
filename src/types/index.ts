@@ -144,6 +144,20 @@ export interface PlatformSettings {
   require_email_verification: boolean;
   admin_only_access: boolean;
   ga_measurement_id?: string | null;
+  invoice_due_days: number;
+  paystack_mode: 'test' | 'live';
+  paystack_public_key_test?: string | null;
+  paystack_public_key_live?: string | null;
+  paystack_secret_last4_test?: string | null;
+  paystack_secret_last4_live?: string | null;
+  hires_enabled: boolean;
+  withdrawals_enabled: boolean;
+  reviews_enabled: boolean;
+  public_banner_enabled: boolean;
+  public_banner_text?: string | null;
+  support_phone?: string | null;
+  support_whatsapp?: string | null;
+  office_address?: string | null;
   updated_at: string;
 }
 
@@ -221,6 +235,55 @@ export interface ProfessionalProfile {
   workType?: '' | 'live_in' | 'live_out' | 'part_time' | 'flexible';
   languages?: string[];
   skills?: string[];
+  deletedAt?: string | null;
+}
+
+export type OverviewRangeDays = 7 | 30 | 90;
+
+export interface OverviewDayPoint {
+  date: string;
+  label: string;
+  count: number;
+}
+
+export interface OverviewNamedCount {
+  name: string;
+  value: number;
+}
+
+export interface AdminOverviewMetrics {
+  rangeDays: OverviewRangeDays;
+  refreshedAt: string;
+  kpis: {
+    verifiedPros: number;
+    pendingApps: number;
+    activeJobs: number;
+    platformRating: number | null;
+    pendingPayouts: number;
+    clientCount: number;
+    escrowHeld: number;
+    consultationRevenue: number;
+  };
+  sparklines: {
+    hires: number[];
+    pros: number[];
+    clients: number[];
+    consultation: number[];
+  };
+  hiresByDay: OverviewDayPoint[];
+  hirePipeline: OverviewNamedCount[];
+  prosByCategory: OverviewNamedCount[];
+  proStatusMix: OverviewNamedCount[];
+  moneyPulse: { escrowHeld: number; withdrawalsPaid: number };
+  ratingHistogram: { rating: number; count: number }[];
+  attention: {
+    pendingPros: ProfessionalProfile[];
+    pendingCerts: number;
+    pendingPayouts: number;
+    flaggedReviews: number;
+    suspendedClients: number;
+  };
+  activity: AdminAuditLog[];
 }
 
 export interface ProfessionalDocument {
@@ -271,6 +334,7 @@ export interface HireRequest {
   clientPhone?: string;
   professionalName?: string;
   paymentStatus?: string;
+  referenceCode: string;
 }
 
 export interface Consultation {
@@ -281,18 +345,50 @@ export interface Consultation {
   paymentStatus: PaymentStatus;
   paystackReference?: string;
   createdAt: string;
+  completedAt?: string;
+  outcomeNotes?: string;
 }
 
 export interface Payment {
   id: string;
   userId: string;
   hireRequestId?: string;
+  hireReferenceCode?: string;
   type: PaymentType;
   amount: number;
   status: PaymentStatus;
   provider: string;
   providerReference?: string;
   createdAt: string;
+}
+
+export enum InvoiceStatus {
+  DRAFT = 'draft',
+  SENT = 'sent',
+  PAID = 'paid',
+  CANCELLED = 'cancelled',
+}
+
+export interface Invoice {
+  id: string;
+  hireRequestId: string;
+  invoiceNumber: string;
+  clientId: string;
+  professionalId?: string;
+  amount: number;
+  dueDate?: string;
+  duration?: string;
+  startDate?: string;
+  notes?: string;
+  status: InvoiceStatus;
+  sentAt?: string;
+  paidAt?: string;
+  createdAt: string;
+  clientName?: string;
+  professionalName?: string;
+  serviceRequested?: string;
+  hireReferenceCode?: string;
+  hireStatus?: string;
 }
 
 export interface Wallet {
@@ -309,6 +405,7 @@ export interface WalletTransaction {
   id: string;
   walletId: string;
   hireRequestId?: string;
+  hireReferenceCode?: string;
   type: TransactionType;
   amount: number;
   status: TransactionStatus;
@@ -324,6 +421,7 @@ export interface WithdrawalRequest {
   professionalName: string;
   amount: number;
   bankName: string;
+  bankCode?: string;
   accountNumber: string;
   accountName: string;
   status: WithdrawalStatus;
@@ -351,6 +449,10 @@ export interface Review {
   comment: string;
   createdAt: string;
   status: 'published' | 'pending' | 'flagged';
+  flagReason?: string;
+  screenedAt?: string;
+  professionalName?: string;
+  hireReferenceCode?: string;
 }
 
 export interface AppNotification {

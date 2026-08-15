@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { dataService } from '@/services/dataService';
 import { formatNaira } from '@/lib/utils';
+import { statusLabel } from '@/data/constants';
 
 type Analytics = Awaited<ReturnType<typeof dataService.getAdminAnalytics>>;
 
@@ -12,7 +13,7 @@ export default function AdminAnalyticsPage() {
   }, []);
 
   if (!data) {
-    return <p className="text-slate-400 font-medium">Loading analytics…</p>;
+    return <p className="text-slate-400 font-medium">One moment…</p>;
   }
 
   const maxCat = Math.max(1, ...Object.values(data.prosByCategory));
@@ -22,18 +23,18 @@ export default function AdminAnalyticsPage() {
     <div className="w-full space-y-8">
       <div className="space-y-2">
         <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#660033]">Analytics</p>
-        <h1 className="text-3xl font-bold text-[#0A0A0A]">Platform metrics</h1>
+        <h1 className="text-3xl font-bold text-[#0A0A0A]">How Birdie is doing</h1>
         <p className="text-sm text-[#615A5C] font-medium max-w-2xl">
-          In-app counts from Birdie data. GA Measurement ID can be stored in Settings for a later embed.
+          Live counts straight from Birdie. Add your Google Analytics ID under Settings if you want that too.
         </p>
       </div>
 
       <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { label: 'Clients', value: data.clientCount },
+          { label: 'Families', value: data.clientCount },
           { label: 'Professionals', value: data.proCount },
-          { label: 'Verified', value: `${data.verifiedCount} (${data.verifiedPct}%)` },
-          { label: 'Consultation fee', value: formatNaira(data.consultationFee) },
+          { label: 'Checked and approved', value: `${data.verifiedCount} (${data.verifiedPct}%)` },
+          { label: 'Meeting fee', value: formatNaira(data.consultationFee) },
         ].map((s) => (
           <div key={s.label} className="bg-white border border-slate-200 rounded-[1.75rem] p-5">
             <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">{s.label}</p>
@@ -44,23 +45,23 @@ export default function AdminAnalyticsPage() {
 
       <div className="grid lg:grid-cols-2 gap-6">
         <section className="bg-white border border-slate-200 rounded-[1.75rem] p-6 space-y-4">
-          <h2 className="text-xl font-bold">Hires by status</h2>
+          <h2 className="text-xl font-bold">Requests by stage</h2>
           {statusEntries.length === 0 && (
-            <p className="text-slate-400 italic text-sm">No hire data yet.</p>
+            <p className="text-slate-400 italic text-sm">No requests yet.</p>
           )}
           {statusEntries.map(([status, count]) => (
             <div key={status} className="flex justify-between text-sm gap-3">
-              <span className="font-medium text-slate-600 capitalize">{status.replace(/_/g, ' ')}</span>
+              <span className="font-medium text-slate-600">{statusLabel(status)}</span>
               <span className="font-bold">{count}</span>
             </div>
           ))}
           <div className="border-t border-slate-100 pt-3 text-sm text-slate-500 font-medium">
-            Commission {data.commissionRate}% · Escrow {data.escrowDays} days
+            Birdie keeps {data.commissionRate}% · we hold the money for {data.escrowDays} days after a job
           </div>
         </section>
 
         <section className="bg-white border border-slate-200 rounded-[1.75rem] p-6 space-y-4">
-          <h2 className="text-xl font-bold">Pros by category</h2>
+          <h2 className="text-xl font-bold">Professionals by kind of help</h2>
           {Object.keys(data.prosByCategory).length === 0 && (
             <p className="text-slate-400 italic text-sm">No professionals yet.</p>
           )}

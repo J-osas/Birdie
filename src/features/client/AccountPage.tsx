@@ -52,11 +52,11 @@ export default function AccountPage() {
         ...(avatarUrl ? { avatar_url: avatarUrl } : {}),
       });
       await refresh();
-      setMessage('Account updated.');
+      setMessage('Saved.');
       setAvatarFile(null);
       if (avatarUrl) setAvatarPreview(avatarUrl);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Could not save');
+      setError(e instanceof Error ? e.message : 'We could not save your changes');
     } finally {
       setSaving(false);
     }
@@ -65,7 +65,7 @@ export default function AccountPage() {
   const freeze = async () => {
     if (
       !confirm(
-        'Freeze your account? You will be signed out and cannot use Birdie until support restores access.'
+        'Pause your account? We will sign you out, and you will need to message us to come back.'
       )
     ) {
       return;
@@ -78,12 +78,12 @@ export default function AccountPage() {
   const softDelete = async () => {
     if (
       !confirm(
-        'Delete your account? This cannot be undone from the app. You will be signed out immediately.'
+        'Close your account? You cannot undo this yourself. We will sign you out straight away.'
       )
     ) {
       return;
     }
-    const typed = prompt('Type DELETE to confirm:');
+    const typed = prompt('Type DELETE to be sure:');
     if (typed !== 'DELETE') return;
     await authService.updateProfile(user.id, {
       status: UserStatus.SUSPENDED,
@@ -96,14 +96,12 @@ export default function AccountPage() {
   return (
     <div className="w-full space-y-8">
       <div className="space-y-2">
-        <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#660033]">
-          {isPro ? 'Settings' : 'Account'}
-        </p>
-        <h1 className="text-3xl font-bold text-[#0A0A0A]">Your profile</h1>
+        <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#660033]">Your details</p>
+        <h1 className="text-3xl font-bold text-[#0A0A0A]">Your details</h1>
         <p className="text-sm text-[#615A5C] font-medium max-w-2xl">
           {isPro
-            ? 'Keep your display name and WhatsApp number current so clients and Birdie ops can reach you. Edit your public bio from the dashboard.'
-            : 'Keep your display name and WhatsApp number current so professionals and Birdie ops can reach you.'}
+            ? 'Keep your name and WhatsApp number correct so families and Birdie can reach you. You change your profile text on your home page.'
+            : 'Keep your name and WhatsApp number correct so Birdie and the person helping you can reach you.'}
         </p>
       </div>
 
@@ -117,7 +115,7 @@ export default function AccountPage() {
                 className="w-24 h-24 rounded-full object-cover border border-slate-200"
               />
               <div className="space-y-2 flex-1">
-                <Label>Profile photo</Label>
+                <Label>Your photo</Label>
                 <Input
                   type="file"
                   accept="image/*"
@@ -127,22 +125,24 @@ export default function AccountPage() {
                     if (file) setAvatarPreview(URL.createObjectURL(file));
                   }}
                 />
-                <p className="text-[10px] text-slate-400 font-medium">Square photos work best.</p>
+                <p className="text-[10px] text-slate-400 font-medium">A square photo looks best.</p>
               </div>
             </div>
 
             <div className="grid sm:grid-cols-2 gap-4">
               <div className="space-y-1.5 sm:col-span-2">
-                <Label>Email</Label>
+                <Label>Your email</Label>
                 <Input value={user.email} disabled className="bg-slate-100 text-slate-500" />
-                <p className="text-[10px] text-slate-400 font-medium">Email cannot be changed here.</p>
+                <p className="text-[10px] text-slate-400 font-medium">
+                  You cannot change your email here. Message us if you need to.
+                </p>
               </div>
               <div className="space-y-1.5">
-                <Label>Display name</Label>
+                <Label>Your name</Label>
                 <Input value={displayName} onChange={(e) => setDisplayName(e.target.value)} />
               </div>
               <div className="space-y-1.5">
-                <Label>WhatsApp number</Label>
+                <Label>Your WhatsApp number</Label>
                 <Input
                   type="tel"
                   placeholder="+234..."
@@ -156,21 +156,22 @@ export default function AccountPage() {
             {message && <p className="text-sm font-bold text-emerald-600">{message}</p>}
 
             <Button onClick={save} disabled={saving || !displayName.trim()}>
-              {saving ? <Loader2 className="animate-spin" size={18} /> : 'Save changes'}
+              {saving ? <Loader2 className="animate-spin" size={18} /> : 'Save'}
             </Button>
           </div>
 
           <div className="bg-white border border-rose-100 rounded-[1.75rem] p-6 space-y-4">
-            <h2 className="font-bold text-lg text-[#0A0A0A]">Danger zone</h2>
+            <h2 className="font-bold text-lg text-[#0A0A0A]">Careful with these</h2>
             <p className="text-sm text-[#615A5C] font-medium">
-              Freeze pauses access. Delete soft-deactivates your profile — contact support for permanent removal.
+              Pausing stops you using Birdie for now. Closing hides your account for good. Message us if you want
+              everything wiped.
             </p>
             <div className="flex flex-wrap gap-3">
               <Button variant="secondary" onClick={freeze}>
-                Freeze account
+                Pause my account
               </Button>
               <Button variant="danger" onClick={softDelete}>
-                Delete account
+                Close my account
               </Button>
             </div>
           </div>
@@ -181,60 +182,63 @@ export default function AccountPage() {
             <img src={IMAGES.story} alt="" className="w-full h-full object-cover" />
           </div>
           <div className="bg-white border border-slate-200 rounded-[1.75rem] p-6 space-y-4">
-            <h2 className="font-bold text-[#0A0A0A]">Why this matters</h2>
+            <h2 className="font-bold text-[#0A0A0A]">Why we ask</h2>
             <ul className="space-y-4 text-sm text-[#615A5C] font-medium">
               <li className="flex gap-3">
                 <UserRound className="shrink-0 text-[#660033]" size={18} />
                 <span>
                   {isPro
-                    ? 'Your display name appears on your public profile and hire threads.'
-                    : 'Your display name shows on hire requests and reviews you leave.'}
+                    ? 'Your name shows on your profile and in your messages with families.'
+                    : 'Your name shows on your requests and on any review you write.'}
                 </span>
               </li>
               <li className="flex gap-3">
                 <Shield className="shrink-0 text-[#660033]" size={18} />
                 <span>
                   {isPro
-                    ? 'WhatsApp helps Birdie and clients confirm schedules quickly.'
-                    : 'WhatsApp is how Birdie and professionals confirm schedules quickly.'}
+                    ? 'WhatsApp is the fastest way for us and families to reach you about dates.'
+                    : 'WhatsApp is the fastest way for us to reach you about dates and money.'}
                 </span>
               </li>
               <li className="flex gap-3">
                 <Lock className="shrink-0 text-[#660033]" size={18} />
-                <span>Email stays locked for login security. Contact support to change it.</span>
+                <span>We lock your email so nobody else can take over your account.</span>
               </li>
             </ul>
           </div>
           <div className="bg-[#660033] text-white rounded-[1.75rem] p-6 space-y-3">
-            <p className="text-xs font-bold uppercase tracking-widest text-white/60">Quick links</p>
+            <p className="text-xs font-bold uppercase tracking-widest text-white/60">Go straight to</p>
             <div className="flex flex-col gap-2 text-sm font-bold">
               {isPro ? (
                 <>
                   <Link to="/app" className="underline underline-offset-4">
-                    Professional dashboard
+                    My home page
                   </Link>
                   <Link to="/app/profile" className="underline underline-offset-4">
-                    Public profile
+                    My profile
                   </Link>
                   <Link to="/app/hires" className="underline underline-offset-4">
-                    Your jobs
+                    My jobs
                   </Link>
                   <Link to="/app/wallet" className="underline underline-offset-4">
-                    Payments
+                    My money
                   </Link>
                 </>
               ) : (
                 <>
                   <Link to="/app" className="underline underline-offset-4">
-                    Find professionals
+                    Find someone to help
                   </Link>
                   <Link to="/app/hires" className="underline underline-offset-4">
-                    Your hires
+                    My requests
+                  </Link>
+                  <Link to="/app/payments" className="underline underline-offset-4">
+                    My payments
                   </Link>
                 </>
               )}
               <Link to="/terms" className="underline underline-offset-4 text-white/80">
-                Terms of use
+                Our rules
               </Link>
             </div>
           </div>

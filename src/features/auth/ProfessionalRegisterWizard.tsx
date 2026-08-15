@@ -35,7 +35,7 @@ const STEPS = ['Personal', 'Details', 'ID docs', 'Review'];
 
 export default function ProfessionalRegisterWizard() {
   const navigate = useNavigate();
-  const { refresh } = useAuth();
+  const { refresh, settings } = useAuth();
   const [step, setStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [geoLoading, setGeoLoading] = useState(false);
@@ -117,6 +117,10 @@ export default function ProfessionalRegisterWizard() {
   };
 
   const submit = async () => {
+    if (settings?.reg_pro_enabled === false) {
+      setError('Professional sign-up is closed right now.');
+      return;
+    }
     setLoading(true);
     setError(null);
     try {
@@ -224,6 +228,22 @@ export default function ProfessionalRegisterWizard() {
     }
     return form.confirmAccurate && form.agreeTerms;
   };
+
+  if (settings && settings.reg_pro_enabled === false) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-6 bg-[#F8FAFB]">
+        <div className="max-w-md bg-white p-10 rounded-[2rem] border border-slate-200 text-center space-y-4">
+          <h1 className="text-2xl font-bold">Sign-up is closed</h1>
+          <p className="text-sm text-[#615A5C] font-medium">
+            We are not taking new professional applications right now. Please try again later.
+          </p>
+          <Link to="/" className="text-sm font-bold text-[#660033]">
+            Back to Birdie
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#F8FAFB] py-10 px-4">

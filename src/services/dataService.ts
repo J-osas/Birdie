@@ -2,7 +2,11 @@ import { supabase } from '@/lib/supabase';
 import {
   Availability,
   Category,
+  Consultation,
   HireRequest,
+  Payment,
+  PaymentStatus,
+  PaymentType,
   PlatformSettings,
   ProfessionalProfile,
   ProfessionalStatus,
@@ -11,6 +15,8 @@ import {
   User,
   UserRole,
   UserStatus,
+  Invoice,
+  InvoiceStatus,
   Wallet,
   WalletTransaction,
   WithdrawalRequest,
@@ -22,6 +28,8 @@ import {
   AdminAuditLog,
   CommunicationTemplate,
   CommunicationLog,
+  AdminOverviewMetrics,
+  OverviewRangeDays,
 } from '@/types';
 import { DEFAULT_CONSULTATION_FEE } from '@/data/constants';
 
@@ -72,6 +80,7 @@ function mapPro(row: Record<string, unknown>): ProfessionalProfile {
     workType: (row.work_type as ProfessionalProfile['workType']) || '',
     languages: Array.isArray(row.languages) ? (row.languages as string[]) : [],
     skills: Array.isArray(row.skills) ? (row.skills as string[]) : [],
+    deletedAt: (row.deleted_at as string) || null,
   };
 }
 
@@ -96,6 +105,115 @@ function mapHire(row: Record<string, unknown>): HireRequest {
     clientPhone: (row.client_phone as string) || undefined,
     professionalName: (row.professional_name as string) || undefined,
     paymentStatus: (row.payment_status as string) || undefined,
+    referenceCode: String(row.reference_code || ''),
+  };
+}
+
+function mapReview(row: Record<string, unknown>): Review {
+  const hire = row.hire_requests as { reference_code?: string; professional_name?: string } | null | undefined;
+  return {
+    id: String(row.id),
+    hireRequestId: String(row.hire_request_id),
+    professionalId: String(row.professional_id),
+    clientId: String(row.client_id),
+    clientName: String(row.client_name || ''),
+    category: String(row.category || ''),
+    rating: Number(row.rating),
+    comment: String(row.comment || ''),
+    createdAt: String(row.created_at),
+    status: (row.status as Review['status']) || 'published',
+    flagReason: (row.flag_reason as string) || undefined,
+    screenedAt: (row.screened_at as string) || undefined,
+    professionalName: hire?.professional_name || undefined,
+    hireReferenceCode: hire?.reference_code || undefined,
+  };
+}
+
+function mapInvoice(row: Record<string, unknown>): Invoice {
+  const hire = row.hire_requests as
+    | { reference_code?: string; professional_name?: string; client_name?: string; service_requested?: string; status?: string }
+    | null
+    | undefined;
+  return {
+    id: String(row.id),
+    hireRequestId: String(row.hire_request_id),
+    invoiceNumber: String(row.invoice_number || ''),
+    clientId: String(row.client_id),
+    professionalId: row.professional_id ? String(row.professional_id) : undefined,
+    amount: Number(row.amount || 0),
+    dueDate: (row.due_date as string) || undefined,
+    duration: (row.duration as string) || undefined,
+    startDate: (row.start_date as string) || undefined,
+    notes: (row.notes as string) || undefined,
+    status: (row.status as InvoiceStatus) || InvoiceStatus.DRAFT,
+    sentAt: (row.sent_at as string) || undefined,
+    paidAt: (row.paid_at as string) || undefined,
+    createdAt: String(row.created_at),
+    clientName: hire?.client_name || undefined,
+    professionalName: hire?.professional_name || undefined,
+    serviceRequested: hire?.service_requested || undefined,
+    hireReferenceCode: hire?.reference_code || undefined,
+    hireStatus: hire?.status || undefined,
+  };
+}
+
+const INVOICE_SELECT =
+  '*, hire_requests(reference_code, professional_name, client_name, service_requested, status)';
+
+const DEFAULT_PLATFORM_SETTINGS: PlatformSettings = {
+  id: 'global',
+  platform_name: 'Birdie',
+  support_email: 'support@birdie.ng',
+  default_currency: 'NGN',
+  commission_rate: 15,
+  consultation_fee_ngn: DEFAULT_CONSULTATION_FEE,
+  min_withdrawal_amount: 5000,
+  escrow_release_days: 3,
+  invoice_due_days: 3,
+  reg_client_enabled: true,
+  reg_pro_enabled: true,
+  auto_verify_pros: false,
+  manual_vetting_required: true,
+  email_notifications_enabled: true,
+  default_sender_email: 'noreply@birdie.ng',
+  admin_alert_recipients: ['admin@birdie.ng'],
+  session_timeout_minutes: 60,
+  require_email_verification: true,
+  admin_only_access: false,
+  ga_measurement_id: null,
+  paystack_mode: 'test',
+  paystack_public_key_test: null,
+  paystack_public_key_live: null,
+  paystack_secret_last4_test: null,
+  paystack_secret_last4_live: null,
+  hires_enabled: true,
+  withdrawals_enabled: true,
+  reviews_enabled: true,
+  public_banner_enabled: false,
+  public_banner_text: null,
+  support_phone: null,
+  support_whatsapp: null,
+  office_address: null,
+  updated_at: new Date().toISOString(),
+};
+
+function mapPlatformSettings(data: Record<string, unknown>): PlatformSettings {
+  return {
+    ...DEFAULT_PLATFORM_SETTINGS,
+    ...data,
+    consultation_fee_ngn: Number(data.consultation_fee_ngn ?? DEFAULT_CONSULTATION_FEE),
+    min_withdrawal_amount: Number(data.min_withdrawal_amount ?? 5000),
+    commission_rate: Number(data.commission_rate ?? 15),
+    escrow_release_days: Number(data.escrow_release_days ?? 3),
+    invoice_due_days: Number(data.invoice_due_days ?? 3),
+    ga_measurement_id: (data.ga_measurement_id as string) || null,
+    paystack_mode: data.paystack_mode === 'live' ? 'live' : 'test',
+    hires_enabled: data.hires_enabled !== false,
+    withdrawals_enabled: data.withdrawals_enabled !== false,
+    reviews_enabled: data.reviews_enabled !== false,
+    email_notifications_enabled: data.email_notifications_enabled !== false,
+    reg_client_enabled: data.reg_client_enabled !== false,
+    reg_pro_enabled: data.reg_pro_enabled !== false,
   };
 }
 
@@ -107,42 +225,25 @@ export const dataService = {
       .eq('id', 'global')
       .maybeSingle();
 
-    if (error || !data) {
-      return {
-        id: 'global',
-        platform_name: 'Birdie',
-        support_email: 'support@birdie.ng',
-        default_currency: 'NGN',
-        commission_rate: 15,
-        consultation_fee_ngn: DEFAULT_CONSULTATION_FEE,
-        min_withdrawal_amount: 5000,
-        escrow_release_days: 3,
-        reg_client_enabled: true,
-        reg_pro_enabled: true,
-        auto_verify_pros: false,
-        manual_vetting_required: true,
-        email_notifications_enabled: true,
-        default_sender_email: 'noreply@birdie.ng',
-        admin_alert_recipients: ['admin@birdie.ng'],
-        session_timeout_minutes: 60,
-        require_email_verification: true,
-        admin_only_access: false,
-        updated_at: new Date().toISOString(),
-      };
-    }
-    return {
-      ...data,
-      consultation_fee_ngn: Number(data.consultation_fee_ngn ?? DEFAULT_CONSULTATION_FEE),
-      min_withdrawal_amount: Number(data.min_withdrawal_amount ?? 5000),
-      ga_measurement_id: (data.ga_measurement_id as string) || null,
-    } as PlatformSettings;
+    if (error || !data) return { ...DEFAULT_PLATFORM_SETTINGS };
+    return mapPlatformSettings(data as Record<string, unknown>);
   },
 
   async updatePlatformSettings(updates: Partial<PlatformSettings>) {
-    const { error } = await supabase
-      .from('platform_settings')
-      .update({ ...updates, updated_at: new Date().toISOString() })
-      .eq('id', 'global');
+    const blocked = [
+      'id',
+      'paystack_mode',
+      'paystack_public_key_test',
+      'paystack_public_key_live',
+      'paystack_secret_last4_test',
+      'paystack_secret_last4_live',
+    ];
+    const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
+    for (const [key, value] of Object.entries(updates)) {
+      if (blocked.includes(key) || value === undefined) continue;
+      patch[key] = value;
+    }
+    const { error } = await supabase.from('platform_settings').update(patch).eq('id', 'global');
     if (error) throw error;
   },
 
@@ -214,12 +315,16 @@ export const dataService = {
   async getAllProfessionals(): Promise<ProfessionalProfile[]> {
     const { data, error } = await supabase
       .from('professional_profiles')
-      .select('*, profiles:user_id(full_name)')
+      .select('*, profiles:user_id(full_name, deleted_at, status)')
       .order('created_at', { ascending: false });
     if (error || !data) return [];
     return data.map((row: Record<string, unknown>) => {
-      const profiles = row.profiles as { full_name?: string } | null;
-      return mapPro({ ...row, full_name: profiles?.full_name });
+      const profiles = row.profiles as { full_name?: string; deleted_at?: string | null } | null;
+      return mapPro({
+        ...row,
+        full_name: profiles?.full_name,
+        deleted_at: profiles?.deleted_at ?? null,
+      });
     });
   },
 
@@ -270,45 +375,180 @@ export const dataService = {
   async updateProfessionalStatus(proId: string, status: ProfessionalStatus, actorId?: string) {
     const { data: pro, error: fetchErr } = await supabase
       .from('professional_profiles')
-      .select('user_id, full_name')
+      .select('user_id, full_name, assessment_completed_at')
       .eq('id', proId)
       .maybeSingle();
     if (fetchErr) throw fetchErr;
+    if (!pro) throw new Error('Professional not found.');
 
-    const { error } = await supabase
+    const publicVisible =
+      status === ProfessionalStatus.VERIFIED || status === ProfessionalStatus.APPROVED;
+    const { data: updated, error } = await supabase
       .from('professional_profiles')
       .update({
         status,
         updated_at: new Date().toISOString(),
-        public_visible: status === ProfessionalStatus.VERIFIED || status === ProfessionalStatus.APPROVED,
+        public_visible: publicVisible,
       })
-      .eq('id', proId);
+      .eq('id', proId)
+      .select('id, status, public_visible')
+      .maybeSingle();
     if (error) throw error;
+    if (!updated) throw new Error('Could not update professional status. Check staff permissions.');
 
-    if (pro?.user_id && status === ProfessionalStatus.VERIFIED) {
+    const userId = String(pro.user_id);
+    if (status === ProfessionalStatus.SUSPENDED) {
+      const { data: profileRow, error: profileErr } = await supabase
+        .from('profiles')
+        .update({ status: UserStatus.SUSPENDED, updated_at: new Date().toISOString() })
+        .eq('id', userId)
+        .select('id')
+        .maybeSingle();
+      if (profileErr) throw profileErr;
+      if (!profileRow) throw new Error('Could not suspend the account login.');
+    }
+    if (status === ProfessionalStatus.VERIFIED || status === ProfessionalStatus.APPROVED) {
+      const { data: profileRow, error: profileErr } = await supabase
+        .from('profiles')
+        .update({
+          status: UserStatus.ACTIVE,
+          deleted_at: null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', userId)
+        .select('id')
+        .maybeSingle();
+      if (profileErr) throw profileErr;
+      if (!profileRow) throw new Error('Could not restore the account login.');
+    }
+
+    if (status === ProfessionalStatus.VERIFIED) {
       await this.createNotification(
-        String(pro.user_id),
+        userId,
         'You’re verified on Birdie',
         'Your documents and assessment were approved. Bank details, certifications, and profile editing are now unlocked. You’re ready for hires.',
         'verification'
       );
     }
-    if (pro?.user_id && status === ProfessionalStatus.REJECTED) {
+    if (status === ProfessionalStatus.REJECTED) {
       await this.createNotification(
-        String(pro.user_id),
+        userId,
         'Verification update',
         'Your Birdie application was not approved. Contact support if you need clarification.',
         'verification'
       );
     }
+    if (status === ProfessionalStatus.SUSPENDED) {
+      await this.createNotification(
+        userId,
+        'Account suspended',
+        'Your Birdie professional account has been suspended. Contact support if you need help.',
+        'account'
+      );
+    }
 
     await this.writeAuditLog({
       actorId,
-      action: status === ProfessionalStatus.VERIFIED ? 'pro.verify' : status === ProfessionalStatus.REJECTED ? 'pro.reject' : 'pro.status',
+      action:
+        status === ProfessionalStatus.VERIFIED
+          ? 'pro.verify'
+          : status === ProfessionalStatus.REJECTED
+            ? 'pro.reject'
+            : status === ProfessionalStatus.SUSPENDED
+              ? 'pro.suspend'
+              : 'pro.status',
       entityType: 'professional',
       entityId: proId,
-      meta: { status, name: pro?.full_name },
+      meta: { status, name: pro.full_name },
     });
+
+    return {
+      status: updated.status as ProfessionalStatus,
+      publicVisible: Boolean(updated.public_visible),
+    };
+  },
+
+  async restoreProfessional(proId: string, actorId?: string) {
+    const { data: pro, error: fetchErr } = await supabase
+      .from('professional_profiles')
+      .select('user_id, full_name, assessment_completed_at, assessment_score')
+      .eq('id', proId)
+      .maybeSingle();
+    if (fetchErr) throw fetchErr;
+    if (!pro) throw new Error('Professional not found.');
+
+    const { data: profileRow, error: profileErr } = await supabase
+      .from('profiles')
+      .update({
+        status: UserStatus.ACTIVE,
+        deleted_at: null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', String(pro.user_id))
+      .select('id')
+      .maybeSingle();
+    if (profileErr) throw profileErr;
+    if (!profileRow) throw new Error('Could not restore the account login.');
+
+    const nextStatus =
+      pro.assessment_completed_at || Number(pro.assessment_score || 0) > 0
+        ? ProfessionalStatus.VERIFIED
+        : ProfessionalStatus.PENDING;
+
+    const result = await this.updateProfessionalStatus(proId, nextStatus, actorId);
+    return { ...result, deletedAt: null as string | null };
+  },
+
+  async softDeleteProfessional(proId: string, actorId?: string) {
+    const { data: pro, error: fetchErr } = await supabase
+      .from('professional_profiles')
+      .select('user_id, full_name')
+      .eq('id', proId)
+      .maybeSingle();
+    if (fetchErr) throw fetchErr;
+    if (!pro) throw new Error('Professional not found.');
+
+    const { data: updated, error } = await supabase
+      .from('professional_profiles')
+      .update({
+        status: ProfessionalStatus.SUSPENDED,
+        public_visible: false,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', proId)
+      .select('id')
+      .maybeSingle();
+    if (error) throw error;
+    if (!updated) throw new Error('Could not delete this professional.');
+
+    const deletedAt = new Date().toISOString();
+    const { data: profileRow, error: profileErr } = await supabase
+      .from('profiles')
+      .update({
+        status: UserStatus.SUSPENDED,
+        deleted_at: deletedAt,
+        updated_at: deletedAt,
+      })
+      .eq('id', String(pro.user_id))
+      .select('id')
+      .maybeSingle();
+    if (profileErr) throw profileErr;
+    if (!profileRow) throw new Error('Could not delete the account.');
+
+    await this.createNotification(
+      String(pro.user_id),
+      'Account deleted',
+      'Your Birdie professional account has been removed. Contact support if this was a mistake.',
+      'account'
+    );
+    await this.writeAuditLog({
+      actorId,
+      action: 'pro.delete',
+      entityType: 'professional',
+      entityId: proId,
+      meta: { name: pro.full_name },
+    });
+    return { status: ProfessionalStatus.SUSPENDED, publicVisible: false, deletedAt };
   },
 
   async submitAssessment(
@@ -367,18 +607,7 @@ export const dataService = {
       .eq('hire_request_id', hireRequestId)
       .maybeSingle();
     if (error || !data) return null;
-    return {
-      id: data.id,
-      hireRequestId: data.hire_request_id,
-      professionalId: data.professional_id,
-      clientId: data.client_id,
-      clientName: data.client_name,
-      category: data.category,
-      rating: data.rating,
-      comment: data.comment,
-      createdAt: data.created_at,
-      status: data.status,
-    };
+    return mapReview(data as Record<string, unknown>);
   },
 
   async addCertification(professionalId: string, title: string, storagePath: string) {
@@ -470,6 +699,9 @@ export const dataService = {
     consultationTime?: string;
   }): Promise<HireRequest> {
     const settings = await this.getPlatformSettings();
+    if (settings.hires_enabled === false) {
+      throw new Error('We are not taking new requests right now.');
+    }
     const { data, error } = await supabase
       .from('hire_requests')
       .insert({
@@ -527,6 +759,20 @@ export const dataService = {
   },
 
   async updateHireStatus(requestId: string, status: RequestStatus, extras: Record<string, unknown> = {}) {
+    if (status === RequestStatus.COMPLETED) {
+      const { data, error } = await supabase.rpc('complete_hire', { p_hire_id: requestId });
+      if (error) throw error;
+      if (data && typeof data === 'object' && 'error' in (data as object)) {
+        throw new Error(String((data as { error?: string }).error));
+      }
+      return;
+    }
+    if (status === RequestStatus.SETTLED) {
+      const { data, error } = await supabase.rpc('release_hire', { p_hire_id: requestId });
+      if (error) throw error;
+      return;
+    }
+
     const { error } = await supabase
       .from('hire_requests')
       .update({ status, updated_at: new Date().toISOString(), ...extras })
@@ -583,7 +829,7 @@ export const dataService = {
   async getTransactions(walletId: string): Promise<WalletTransaction[]> {
     const { data, error } = await supabase
       .from('wallet_transactions')
-      .select('*')
+      .select('*, hire_requests(reference_code)')
       .eq('wallet_id', walletId)
       .order('created_at', { ascending: false });
     if (error || !data) return [];
@@ -591,6 +837,7 @@ export const dataService = {
       id: row.id,
       walletId: row.wallet_id,
       hireRequestId: row.hire_request_id || undefined,
+      hireReferenceCode: (row.hire_requests as { reference_code?: string } | null)?.reference_code,
       type: row.tx_type,
       amount: Number(row.amount),
       status: row.status,
@@ -612,6 +859,7 @@ export const dataService = {
       professionalName: row.professional_name,
       amount: Number(row.amount),
       bankName: row.bank_name,
+      bankCode: row.bank_code || undefined,
       accountNumber: row.account_number,
       accountName: row.account_name,
       status: row.status as WithdrawalStatus,
@@ -627,15 +875,27 @@ export const dataService = {
     professionalName: string;
     amount: number;
     bankName: string;
+    bankCode: string;
     accountNumber: string;
     accountName: string;
   }) {
+    const settings = await this.getPlatformSettings();
+    if (settings.withdrawals_enabled === false) {
+      throw new Error('Withdrawals are paused right now. Try again later.');
+    }
+    const min = settings.min_withdrawal_amount || 5000;
+    if (params.amount < min) throw new Error(`Minimum withdrawal is ₦${min.toLocaleString('en-NG')}`);
+    if (!params.bankCode) throw new Error('Pick a bank from the list');
+    if (!/^\d{10}$/.test(params.accountNumber)) throw new Error('Account number must be 10 digits');
+    const wallet = await this.getWallet(params.professionalId);
+    if (!wallet || params.amount > wallet.availableBalance) throw new Error('Amount is more than your available balance');
     const { error } = await supabase.from('withdrawal_requests').insert({
       wallet_id: params.walletId,
       professional_id: params.professionalId,
       professional_name: params.professionalName,
       amount: params.amount,
       bank_name: params.bankName,
+      bank_code: params.bankCode,
       account_number: params.accountNumber,
       account_name: params.accountName,
       status: WithdrawalStatus.REQUESTED,
@@ -689,8 +949,14 @@ export const dataService = {
       updated_at: new Date().toISOString(),
     };
     if (deletedAt !== undefined) patch.deleted_at = deletedAt;
-    const { error } = await supabase.from('profiles').update(patch).eq('id', userId);
+    const { data, error } = await supabase
+      .from('profiles')
+      .update(patch)
+      .eq('id', userId)
+      .select('id, status, deleted_at')
+      .maybeSingle();
     if (error) throw error;
+    if (!data) throw new Error('Could not update this account. Check staff permissions.');
     await this.writeAuditLog({
       actorId,
       action: status === UserStatus.SUSPENDED ? 'user.suspend' : 'user.restore',
@@ -698,37 +964,60 @@ export const dataService = {
       entityId: userId,
       meta: { status, deletedAt: deletedAt ?? null },
     });
+    return {
+      status: data.status as UserStatus,
+      deletedAt: (data.deleted_at as string) || null,
+    };
   },
 
   async listAllReviews(): Promise<Review[]> {
     const { data, error } = await supabase
       .from('reviews')
-      .select('*')
+      .select('*, hire_requests(reference_code, professional_name)')
       .order('created_at', { ascending: false });
     if (error || !data) return [];
-    return data.map((row) => ({
-      id: row.id,
-      hireRequestId: row.hire_request_id,
-      professionalId: row.professional_id,
-      clientId: row.client_id,
-      clientName: row.client_name,
-      category: row.category,
-      rating: row.rating,
-      comment: row.comment,
-      createdAt: row.created_at,
-      status: row.status,
-    }));
+    return data.map((row) => mapReview(row as Record<string, unknown>));
   },
 
-  async setReviewStatus(id: string, status: string, actorId?: string) {
-    const { error } = await supabase.from('reviews').update({ status }).eq('id', id);
+  async getReview(id: string): Promise<Review | null> {
+    const { data, error } = await supabase
+      .from('reviews')
+      .select('*, hire_requests(reference_code, professional_name)')
+      .eq('id', id)
+      .maybeSingle();
+    if (error || !data) return null;
+    return mapReview(data as Record<string, unknown>);
+  },
+
+  async setReviewStatus(id: string, status: string, actorId?: string, flagReason?: string) {
+    const patch: Record<string, unknown> = { status, screened_at: new Date().toISOString() };
+    if (status === 'published') patch.flag_reason = null;
+    if (status === 'flagged') patch.flag_reason = flagReason || 'A person at Birdie did not approve this';
+    if (status === 'pending') patch.flag_reason = flagReason || 'Waiting for a Birdie decision';
+    const { error } = await supabase.from('reviews').update(patch).eq('id', id);
     if (error) throw error;
     await this.writeAuditLog({
       actorId,
       action: 'review.status',
       entityType: 'review',
       entityId: id,
-      meta: { status },
+      meta: { status, flagReason: flagReason || null },
+    });
+  },
+
+  // A family reporting a live review sends it back to waiting for a Birdie decision.
+  async reportReview(id: string, actorId?: string, reason = 'Reported by a family') {
+    const { error } = await supabase
+      .from('reviews')
+      .update({ status: 'pending', flag_reason: reason })
+      .eq('id', id);
+    if (error) throw error;
+    await this.writeAuditLog({
+      actorId,
+      action: 'review.report',
+      entityType: 'review',
+      entityId: id,
+      meta: { reason },
     });
   },
 
@@ -827,6 +1116,181 @@ export const dataService = {
       consultationFee: settings.consultation_fee_ngn,
       commissionRate: settings.commission_rate,
       escrowDays: settings.escrow_release_days,
+    };
+  },
+
+  async getAdminOverviewMetrics(rangeDays: OverviewRangeDays = 30): Promise<AdminOverviewMetrics> {
+    const rangeStart = new Date();
+    rangeStart.setHours(0, 0, 0, 0);
+    rangeStart.setDate(rangeStart.getDate() - (rangeDays - 1));
+    const inRange = (iso?: string | null) => {
+      if (!iso) return false;
+      return new Date(iso).getTime() >= rangeStart.getTime();
+    };
+
+    const [pros, hires, payouts, clients, reviews, activity, certCountRes] = await Promise.all([
+      this.getAllProfessionals(),
+      this.getHireRequests('admin', 'ADMIN'),
+      this.getWithdrawalRequests(),
+      this.listClients(),
+      this.listAllReviews(),
+      this.listAuditLog(15),
+      supabase
+        .from('professional_certifications')
+        .select('id', { count: 'exact', head: true })
+        .eq('verification_status', 'pending'),
+    ]);
+
+    const pendingCerts = certCountRes.count || 0;
+    const verifiedPros = pros.filter(
+      (p) => p.status === ProfessionalStatus.VERIFIED || p.status === ProfessionalStatus.APPROVED
+    );
+    const pendingApps = pros.filter(
+      (p) => p.status === ProfessionalStatus.PENDING || p.status === ProfessionalStatus.UNDER_REVIEW
+    );
+    const activeJobs = hires.filter((h) => h.status === 'funded' || h.status === 'active');
+    const pendingPayouts = payouts.filter((p) => p.status === 'requested');
+    const publishedReviews = reviews.filter((r) => r.status === 'published');
+    const ratingSum = publishedReviews.reduce((s, r) => s + r.rating, 0);
+    const platformRating =
+      publishedReviews.length > 0
+        ? ratingSum / publishedReviews.length
+        : verifiedPros.some((p) => p.rating > 0)
+          ? verifiedPros.reduce((s, p) => s + (p.rating || 0), 0) /
+            Math.max(1, verifiedPros.filter((p) => (p.rating || 0) > 0).length)
+          : null;
+
+    const CONSULTATION_PAID = new Set([
+      'consultation_paid',
+      'accepted',
+      'awaiting_escrow',
+      'funded',
+      'active',
+      'completed',
+      'settled',
+    ]);
+    const periodHires = hires.filter((h) => inRange(h.createdAt));
+    const consultationRevenue = periodHires
+      .filter((h) => CONSULTATION_PAID.has(h.status))
+      .reduce((s, h) => s + Number(h.amount || 0), 0);
+
+    const escrowHeld = hires
+      .filter((h) => h.status === 'funded' || h.status === 'active')
+      .reduce((s, h) => s + Number(h.escrowAmount || 0), 0);
+
+    const withdrawalsPaid = payouts
+      .filter((p) => p.status === 'paid' && inRange(p.processedAt || p.requestedAt))
+      .reduce((s, p) => s + Number(p.amount || 0), 0);
+
+    const dayKeys: string[] = [];
+    const dayLabels: string[] = [];
+    for (let i = rangeDays - 1; i >= 0; i--) {
+      const d = new Date();
+      d.setHours(0, 0, 0, 0);
+      d.setDate(d.getDate() - i);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      dayKeys.push(key);
+      dayLabels.push(d.toLocaleDateString('en-NG', { month: 'short', day: 'numeric' }));
+    }
+    const dateKey = (iso: string) => {
+      const d = new Date(iso);
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    };
+    const countByDay = (timestamps: string[]) => {
+      const map = new Map<string, number>();
+      for (const t of timestamps) {
+        const k = dateKey(t);
+        map.set(k, (map.get(k) || 0) + 1);
+      }
+      return dayKeys.map((k) => map.get(k) || 0);
+    };
+    const sumByDay = (rows: { at: string; amount: number }[]) => {
+      const map = new Map<string, number>();
+      for (const r of rows) {
+        const k = dateKey(r.at);
+        map.set(k, (map.get(k) || 0) + r.amount);
+      }
+      return dayKeys.map((k) => map.get(k) || 0);
+    };
+
+    const hireCounts = countByDay(hires.map((h) => h.createdAt));
+    const hiresByDay = dayKeys.map((date, i) => ({
+      date,
+      label: dayLabels[i],
+      count: hireCounts[i],
+    }));
+
+    const pendingPay = hires.filter(
+      (h) => h.status === 'awaiting_consultation_pay' || h.status === 'awaiting_escrow'
+    ).length;
+    const pipelineActive = hires.filter((h) =>
+      ['accepted', 'consultation_paid', 'funded', 'active'].includes(h.status)
+    ).length;
+    const pipelineCompleted = hires.filter((h) => h.status === 'completed' || h.status === 'settled').length;
+    const pipelineCancelled = hires.filter((h) => h.status === 'cancelled' || h.status === 'disputed').length;
+
+    const byCategory = new Map<string, number>();
+    for (const p of pros) {
+      byCategory.set(p.category, (byCategory.get(p.category) || 0) + 1);
+    }
+
+    const rejected = pros.filter((p) => p.status === ProfessionalStatus.REJECTED).length;
+    const suspended = pros.filter((p) => p.status === ProfessionalStatus.SUSPENDED).length;
+
+    const ratingHistogram = [1, 2, 3, 4, 5].map((rating) => ({
+      rating,
+      count: publishedReviews.filter((r) => r.rating === rating).length,
+    }));
+
+    return {
+      rangeDays,
+      refreshedAt: new Date().toISOString(),
+      kpis: {
+        verifiedPros: verifiedPros.length,
+        pendingApps: pendingApps.length,
+        activeJobs: activeJobs.length,
+        platformRating,
+        pendingPayouts: pendingPayouts.length,
+        clientCount: clients.length,
+        escrowHeld,
+        consultationRevenue,
+      },
+      sparklines: {
+        hires: hireCounts,
+        pros: countByDay(pros.map((p) => p.createdAt)),
+        clients: countByDay(clients.map((c) => c.createdAt)),
+        consultation: sumByDay(
+          periodHires
+            .filter((h) => CONSULTATION_PAID.has(h.status))
+            .map((h) => ({ at: h.createdAt, amount: Number(h.amount || 0) }))
+        ),
+      },
+      hiresByDay,
+      hirePipeline: [
+        { name: 'Waiting to pay', value: pendingPay },
+        { name: 'Job running', value: pipelineActive },
+        { name: 'Job done', value: pipelineCompleted },
+        { name: 'Cancelled', value: pipelineCancelled },
+      ],
+      prosByCategory: Array.from(byCategory.entries())
+        .map(([name, value]) => ({ name, value }))
+        .sort((a, b) => b.value - a.value),
+      proStatusMix: [
+        { name: 'Verified', value: verifiedPros.length },
+        { name: 'Being checked', value: pendingApps.length },
+        { name: 'Not approved', value: rejected },
+        { name: 'Paused', value: suspended },
+      ].filter((s) => s.value > 0),
+      moneyPulse: { escrowHeld, withdrawalsPaid },
+      ratingHistogram,
+      attention: {
+        pendingPros: pendingApps.slice(0, 6),
+        pendingCerts,
+        pendingPayouts: pendingPayouts.length,
+        flaggedReviews: reviews.filter((r) => r.status === 'flagged').length,
+        suspendedClients: clients.filter((c) => c.status === UserStatus.SUSPENDED || !!c.deletedAt).length,
+      },
+      activity,
     };
   },
 
@@ -952,18 +1416,45 @@ export const dataService = {
     }
     const { data, error } = await query;
     if (error || !data) return [];
-    return data.map((row) => ({
-      id: row.id,
-      hireRequestId: row.hire_request_id,
-      professionalId: row.professional_id,
-      clientId: row.client_id,
-      clientName: row.client_name,
-      category: row.category,
-      rating: row.rating,
-      comment: row.comment,
-      createdAt: row.created_at,
-      status: row.status,
-    }));
+    return data.map((row) => mapReview(row as Record<string, unknown>));
+  },
+
+  async getReviewsByClient(clientId: string): Promise<Review[]> {
+    const { data, error } = await supabase
+      .from('reviews')
+      .select('*')
+      .eq('client_id', clientId)
+      .order('created_at', { ascending: false });
+    if (error || !data) return [];
+    return data.map((row) => mapReview(row as Record<string, unknown>));
+  },
+
+  async getEligibleHiresForReview(clientId: string, professionalId: string): Promise<HireRequest[]> {
+    const [hires, reviews] = await Promise.all([
+      this.getHireRequests(clientId, 'CLIENT'),
+      this.getReviewsByClient(clientId),
+    ]);
+    const reviewed = new Set(reviews.map((r) => r.hireRequestId));
+    return hires.filter(
+      (h) =>
+        h.professionalId === professionalId &&
+        (h.status === RequestStatus.COMPLETED || h.status === RequestStatus.SETTLED) &&
+        !reviewed.has(h.id)
+    );
+  },
+
+  async getUnreviewedCompletedHires(clientId: string): Promise<HireRequest[]> {
+    const [hires, reviews] = await Promise.all([
+      this.getHireRequests(clientId, 'CLIENT'),
+      this.getReviewsByClient(clientId),
+    ]);
+    const reviewed = new Set(reviews.map((r) => r.hireRequestId));
+    return hires.filter(
+      (h) =>
+        Boolean(h.professionalId) &&
+        (h.status === RequestStatus.COMPLETED || h.status === RequestStatus.SETTLED) &&
+        !reviewed.has(h.id)
+    );
   },
 
   async createReview(params: {
@@ -974,18 +1465,42 @@ export const dataService = {
     category: string;
     rating: number;
     comment: string;
-  }) {
-    const { error } = await supabase.from('reviews').insert({
-      hire_request_id: params.hireRequestId,
-      professional_id: params.professionalId,
-      client_id: params.clientId,
-      client_name: params.clientName,
-      category: params.category,
-      rating: params.rating,
-      comment: params.comment,
-      status: 'published',
-    });
-    if (error) throw error;
+  }): Promise<Review> {
+    const settings = await this.getPlatformSettings();
+    if (settings.reviews_enabled === false) {
+      throw new Error('Reviews are paused right now.');
+    }
+    const { data, error } = await supabase
+      .from('reviews')
+      .insert({
+        hire_request_id: params.hireRequestId,
+        professional_id: params.professionalId,
+        client_id: params.clientId,
+        client_name: params.clientName,
+        category: params.category,
+        rating: params.rating,
+        comment: params.comment,
+        status: 'pending',
+        flag_reason: null,
+      })
+      .select('*')
+      .single();
+    if (error || !data) throw error || new Error('Could not send your review');
+    const review = mapReview(data as Record<string, unknown>);
+    // Fire and forget: if this never lands, a job on the server checks it a minute later.
+    supabase.functions.invoke('review-screen', { body: { reviewId: review.id } }).catch(() => undefined);
+    return review;
+  },
+
+  // Waits while Birdie checks a review. Returns as soon as the check is finished.
+  async waitForReviewCheck(id: string, timeoutMs = 15000): Promise<Review | null> {
+    const startedAt = Date.now();
+    let latest = await this.getReview(id);
+    while (latest && latest.status === 'pending' && !latest.screenedAt && Date.now() - startedAt < timeoutMs) {
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+      latest = await this.getReview(id);
+    }
+    return latest;
   },
 
   async getNotifications(userId: string): Promise<AppNotification[]> {
@@ -1013,8 +1528,21 @@ export const dataService = {
     await supabase.from('notifications').update({ read: true }).eq('user_id', userId).eq('read', false);
   },
 
-  async createNotification(userId: string, title: string, body: string, type = 'info') {
-    await supabase.from('notifications').insert({ user_id: userId, title, body, type });
+  async createNotification(
+    userId: string,
+    title: string,
+    body: string,
+    type = 'info',
+    link?: { relatedEntity?: string; relatedId?: string }
+  ) {
+    await supabase.from('notifications').insert({
+      user_id: userId,
+      title,
+      body,
+      type,
+      related_entity: link?.relatedEntity || null,
+      related_id: link?.relatedId || null,
+    });
   },
 
   async getBlogPosts(publishedOnly = true): Promise<BlogPost[]> {
@@ -1061,22 +1589,275 @@ export const dataService = {
     paymentType: 'consultation' | 'escrow';
     amount?: number;
   }) {
+    const callbackUrl = `${window.location.origin}/app/payments/return?hire=${payload.hireRequestId}`;
     const { data, error } = await supabase.functions.invoke('paystack-initialize', {
-      body: payload,
+      body: { ...payload, callbackUrl },
     });
     if (error) throw error;
+    if (data && typeof data === 'object' && 'error' in data && (data as { error?: string }).error) {
+      throw new Error((data as { error: string }).error);
+    }
     return data as { authorization_url: string; reference: string };
+  },
+
+  async verifyPaystackPayment(reference: string) {
+    const { data, error } = await supabase.functions.invoke('paystack-verify', { body: { reference } });
+    if (error) throw error;
+    if (data && typeof data === 'object' && 'error' in data && (data as { error?: string }).error) {
+      throw new Error((data as { error: string }).error);
+    }
+    return data as { paid: boolean; hireRequestId?: string; paymentType?: string; reference: string };
+  },
+
+  async listPaystackBanks(): Promise<{ name: string; code: string }[]> {
+    const { data, error } = await supabase.functions.invoke('paystack-banks', { body: {} });
+    if (error) throw error;
+    if (data && typeof data === 'object' && 'error' in data && (data as { error?: string }).error) {
+      throw new Error((data as { error: string }).error);
+    }
+    return ((data as { banks?: { name: string; code: string }[] })?.banks || []);
+  },
+
+  async refundPayment(params: { paymentId?: string; hireRequestId?: string; paymentType?: 'consultation' | 'escrow' }) {
+    const { data, error } = await supabase.functions.invoke('paystack-refund', { body: params });
+    if (error) throw error;
+    if (data && typeof data === 'object' && 'error' in data && (data as { error?: string }).error) {
+      throw new Error((data as { error: string }).error);
+    }
+  },
+
+  async approveWithdrawalTransfer(withdrawalId: string) {
+    const { data, error } = await supabase.functions.invoke('paystack-transfer', { body: { withdrawalId } });
+    if (error) throw error;
+    if (data && typeof data === 'object' && 'error' in data && (data as { error?: string }).error) {
+      throw new Error((data as { error: string }).error);
+    }
+  },
+
+  async getConsultationForHire(hireId: string): Promise<Consultation | null> {
+    const { data, error } = await supabase
+      .from('consultations')
+      .select('*')
+      .eq('hire_request_id', hireId)
+      .maybeSingle();
+    if (error || !data) return null;
+    return {
+      id: data.id,
+      hireRequestId: data.hire_request_id,
+      scheduledAt: data.scheduled_at,
+      feeAmount: Number(data.fee_amount || 0),
+      paymentStatus: data.payment_status as PaymentStatus,
+      paystackReference: data.paystack_reference || undefined,
+      createdAt: data.created_at,
+      completedAt: data.completed_at || undefined,
+      outcomeNotes: data.outcome_notes || undefined,
+    };
+  },
+
+  // Staff mark the consultation call as done. Birdie then drafts the invoice.
+  async markConsultationDone(params: { hireId: string; notes?: string; actorId?: string }): Promise<Invoice | null> {
+    const { error } = await supabase
+      .from('consultations')
+      .update({ completed_at: new Date().toISOString(), outcome_notes: params.notes || null })
+      .eq('hire_request_id', params.hireId);
+    if (error) throw error;
+
+    const { error: draftError } = await supabase.rpc('draft_invoice_for_hire', { p_hire_id: params.hireId });
+    if (draftError) throw draftError;
+
+    const invoice = await this.getInvoiceForHire(params.hireId);
+    const { data: hire } = await supabase
+      .from('hire_requests')
+      .select('reference_code, client_name')
+      .eq('id', params.hireId)
+      .maybeSingle();
+    const { data: staff } = await supabase.from('profiles').select('id').in('role', ['admin', 'operations']);
+    const ref = hire?.reference_code || 'this hire';
+    const who = hire?.client_name || 'A family';
+    for (const s of staff || []) {
+      if (s.id === params.actorId) continue;
+      await this.createNotification(
+        s.id,
+        'A bill is ready to check',
+        `${who} · ${ref}. Open the hire, check the amount, then send it to the family.`,
+        'invoice',
+        invoice ? { relatedEntity: 'invoice', relatedId: invoice.id } : { relatedEntity: 'hire_request', relatedId: params.hireId }
+      );
+    }
+
+    await this.writeAuditLog({
+      actorId: params.actorId,
+      action: 'consultation.done',
+      entityType: 'hire',
+      entityId: params.hireId,
+      meta: { notes: params.notes || null },
+    });
+    return invoice;
+  },
+
+  async getInvoiceForHire(hireId: string): Promise<Invoice | null> {
+    const { data, error } = await supabase
+      .from('invoices')
+      .select(INVOICE_SELECT)
+      .eq('hire_request_id', hireId)
+      .maybeSingle();
+    if (error || !data) return null;
+    return mapInvoice(data as Record<string, unknown>);
+  },
+
+  async getInvoice(id: string): Promise<Invoice | null> {
+    const { data, error } = await supabase
+      .from('invoices')
+      .select(INVOICE_SELECT)
+      .eq('id', id)
+      .maybeSingle();
+    if (error || !data) return null;
+    return mapInvoice(data as Record<string, unknown>);
+  },
+
+  async listInvoices(clientId?: string): Promise<Invoice[]> {
+    let query = supabase.from('invoices').select(INVOICE_SELECT).order('created_at', { ascending: false });
+    if (clientId) query = query.eq('client_id', clientId);
+    const { data, error } = await query;
+    if (error || !data) return [];
+    return data.map((row) => mapInvoice(row as Record<string, unknown>));
+  },
+
+  async saveInvoiceDraft(params: {
+    id: string;
+    amount: number;
+    dueDate?: string;
+    duration?: string;
+    startDate?: string;
+    notes?: string;
+  }): Promise<Invoice> {
+    if (!params.amount || params.amount <= 0) throw new Error('Enter the amount the family agreed to pay');
+    const { data, error } = await supabase
+      .from('invoices')
+      .update({
+        amount: params.amount,
+        due_date: params.dueDate || null,
+        duration: params.duration || null,
+        start_date: params.startDate || null,
+        notes: params.notes || null,
+      })
+      .eq('id', params.id)
+      .select(INVOICE_SELECT)
+      .single();
+    if (error || !data) throw error || new Error('Could not save the invoice');
+    return mapInvoice(data as Record<string, unknown>);
+  },
+
+  // Send the invoice: the hire moves to "waiting for payment" and the client is told to pay.
+  async sendInvoice(params: {
+    invoiceId: string;
+    professionalUserId?: string;
+    referenceCode?: string;
+    actorId?: string;
+  }) {
+    const invoice = await this.getInvoice(params.invoiceId);
+    if (!invoice) throw new Error('Invoice not found');
+    if (!invoice.amount || invoice.amount <= 0) throw new Error('Enter the amount before you send this invoice');
+
+    const { error } = await supabase
+      .from('invoices')
+      .update({ status: InvoiceStatus.SENT, sent_at: new Date().toISOString() })
+      .eq('id', params.invoiceId);
+    if (error) throw error;
+
+    await this.applyAgreedJobPrice({
+      hireId: invoice.hireRequestId,
+      escrowAmount: invoice.amount,
+      startDate: invoice.startDate || undefined,
+      duration: invoice.duration || undefined,
+    });
+
+    const ref = params.referenceCode || invoice.hireReferenceCode || 'your hire';
+    const amountText = `₦${invoice.amount.toLocaleString()}`;
+    if (params.professionalUserId) {
+      await this.createNotification(
+        params.professionalUserId,
+        'Price agreed for your job',
+        `Birdie sent the family a bill of ${amountText} for ${ref}. The job starts once they pay.`,
+        'hire'
+      );
+    }
+    await this.createNotification(
+      invoice.clientId,
+      'Your Birdie bill is ready',
+      `${invoice.invoiceNumber} · ${amountText} for ${ref}. Open it to pay.`,
+      'invoice',
+      { relatedEntity: 'invoice', relatedId: invoice.id }
+    );
+
+    await this.writeAuditLog({
+      actorId: params.actorId,
+      action: 'invoice.sent',
+      entityType: 'invoice',
+      entityId: invoice.id,
+      meta: { amount: invoice.amount, hireId: invoice.hireRequestId },
+    });
+  },
+
+  // Writes the agreed amount onto the hire and moves it to "waiting for payment".
+  async applyAgreedJobPrice(params: {
+    hireId: string;
+    escrowAmount: number;
+    startDate?: string;
+    duration?: string;
+  }) {
+    if (!params.escrowAmount || params.escrowAmount <= 0) throw new Error('Enter the agreed job amount');
+    const extras: Record<string, unknown> = {
+      escrow_amount: params.escrowAmount,
+      payment_status: 'awaiting_escrow',
+    };
+    if (params.startDate) {
+      extras.preferred_start_date = params.startDate.includes('T')
+        ? params.startDate
+        : `${params.startDate}T09:00:00`;
+    }
+    if (params.duration) {
+      const { data: hire } = await supabase
+        .from('hire_requests')
+        .select('requirements')
+        .eq('id', params.hireId)
+        .maybeSingle();
+      extras.requirements = { ...((hire?.requirements as Record<string, unknown>) || {}), duration: params.duration };
+    }
+    await this.updateHireStatus(params.hireId, RequestStatus.AWAITING_ESCROW, extras);
+  },
+
+  async getPayments(userId?: string): Promise<Payment[]> {
+    let query = supabase
+      .from('payments')
+      .select('*, hire_requests(reference_code)')
+      .order('created_at', { ascending: false });
+    if (userId) query = query.eq('user_id', userId);
+    const { data, error } = await query;
+    if (error || !data) return [];
+    return data.map((row) => ({
+      id: row.id,
+      userId: row.user_id,
+      hireRequestId: row.hire_request_id || undefined,
+      hireReferenceCode: (row.hire_requests as { reference_code?: string } | null)?.reference_code,
+      type: row.payment_type as PaymentType,
+      amount: Number(row.amount),
+      status: row.status as PaymentStatus,
+      provider: row.provider,
+      providerReference: row.provider_reference || undefined,
+      createdAt: row.created_at,
+    }));
   },
 };
 
 const FALLBACK_BLOG: BlogPost[] = [
   {
     id: 'b1',
-    title: 'How Birdie Vets Domestic Professionals in Lagos',
+    title: 'How Birdie Checks Home Helpers in Lagos',
     slug: 'how-birdie-vets',
-    excerpt: 'Identity checks, guarantors, police clearance, and skills assessments — how trust is built.',
+    excerpt: 'ID checks, guarantors, police clearance, and a skills test — how we decide who can go live.',
     content:
-      'Birdie was built to replace informal referrals with a structured vetting pipeline. Every professional completes identity verification, document upload, guarantor details, and a category-specific assessment before admin review.',
+      'Birdie checks every professional before a family can hire them. They send us their ID, papers, guarantor details, and they sit a skills test. A person at Birdie looks at all of that before they go live.',
     category: 'Safety',
     author: 'Birdie Team',
     published: true,
@@ -1087,9 +1868,9 @@ const FALLBACK_BLOG: BlogPost[] = [
     id: 'b2',
     title: 'Hiring Domestic Staff: A Practical Guide for Busy Households',
     slug: 'hiring-guide',
-    excerpt: 'Define scope, use escrow, and set clear expectations before day one.',
+    excerpt: 'Say what you need, pay through Birdie, and agree the job before day one.',
     content:
-      'Start with category and schedule clarity. Use Birdie’s consultation step to align contracts and rates. Fund escrow only after terms are agreed so both sides are protected.',
+      'Start with the kind of help you need and when. Pay the meeting fee so Birdie can set up a call. After the call we send you a bill for the amount you agreed. Birdie holds your money until the job is done, then pays the professional.',
     category: 'Guides',
     author: 'Birdie Team',
     published: true,
@@ -1098,11 +1879,11 @@ const FALLBACK_BLOG: BlogPost[] = [
   },
   {
     id: 'b3',
-    title: 'Why Escrow Matters for Domestic Work',
+    title: 'Why Birdie Holds Your Money',
     slug: 'why-escrow',
-    excerpt: 'Transparent payouts protect families and professionals alike.',
+    excerpt: 'You pay Birdie, not the professional. That keeps both sides safe.',
     content:
-      'Clients deposit into secure escrow. Funds release when milestones are met. Professionals get a clear ledger and withdrawal path — dignity and structure instead of delayed cash handoffs.',
+      'You pay your bill with your card. Birdie holds that money while the work is happening. When the job is done we pay the professional and keep a small service fee. Nobody waits on a cash handoff, and nobody takes the money before the work is finished.',
     category: 'Trust',
     author: 'Birdie Team',
     published: true,

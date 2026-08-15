@@ -3,15 +3,17 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { MapPin, Star, Search } from 'lucide-react';
 import { dataService } from '@/services/dataService';
 import { Availability, ProfessionalProfile, ProfessionalStatus } from '@/types';
-import { CATEGORIES } from '@/data/constants';
+import { CATEGORIES, statusLabel } from '@/data/constants';
 import { IMAGES, categoryImage } from '@/data/images';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Input, Select } from '@/components/ui/Input';
 import { SectionHeading } from './sections/SectionHeading';
+import { useAuth } from '@/app/AuthProvider';
 
 export default function ProfessionalsPage() {
   const [params, setParams] = useSearchParams();
+  const { settings } = useAuth();
   const [pros, setPros] = useState<ProfessionalProfile[]>([]);
   const [q, setQ] = useState('');
   const category = params.get('category') || '';
@@ -35,9 +37,9 @@ export default function ProfessionalsPage() {
   return (
     <div className="w-full px-6 md:w-[90vw] md:mx-auto py-12 space-y-10">
       <SectionHeading
-        eyebrow="Directory"
-        title="Find professionals"
-        subtitle="Verified pros and pending applicants — always clearly tagged."
+        eyebrow="Our people"
+        title="Find someone to help"
+        subtitle="We tell you clearly who has finished our checks and who is still being checked."
       />
 
       <div className="grid md:grid-cols-[1fr_200px_200px] gap-4 bg-white border border-slate-200 rounded-[1.75rem] p-4 shadow-sm">
@@ -45,7 +47,7 @@ export default function ProfessionalsPage() {
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
           <Input
             className="pl-12 bg-[#F8FAFB]"
-            placeholder="Search by name or keyword..."
+            placeholder="Search a name, a skill or an area…"
             value={q}
             onChange={(e) => setQ(e.target.value)}
           />
@@ -60,7 +62,7 @@ export default function ProfessionalsPage() {
             setParams(next);
           }}
         >
-          <option value="">All categories</option>
+          <option value="">Any kind of help</option>
           {CATEGORIES.map((c) => (
             <option key={c} value={c}>
               {c}
@@ -68,9 +70,9 @@ export default function ProfessionalsPage() {
           ))}
         </Select>
         <Select className="bg-[#F8FAFB]" defaultValue="all">
-          <option value="all">All availability</option>
-          <option value="available">Available</option>
-          <option value="busy">Busy / on job</option>
+          <option value="all">Free or busy</option>
+          <option value="available">Free to start</option>
+          <option value="busy">Already on a job</option>
         </Select>
       </div>
 
@@ -91,9 +93,9 @@ export default function ProfessionalsPage() {
                 />
                 <div className="absolute top-4 left-4">
                   {verified ? (
-                    <Badge tone="success">Verified</Badge>
+                    <Badge tone="success">Checked by Birdie</Badge>
                   ) : (
-                    <Badge tone="warning">Pending verification</Badge>
+                    <Badge tone="warning">Still being checked</Badge>
                   )}
                 </div>
               </div>
@@ -101,11 +103,11 @@ export default function ProfessionalsPage() {
                 <div>
                   <p className="text-[10px] font-bold uppercase tracking-widest text-[#660033]">{pro.category}</p>
                   <h3 className="text-xl font-bold text-[#0A0A0A] mt-1">
-                    {pro.fullName || 'Birdie Professional'}
+                    {pro.fullName || 'A Birdie professional'}
                   </h3>
                 </div>
                 <p className="text-sm text-[#615A5C] line-clamp-2 font-medium">
-                  {pro.bio || 'Vetted domestic professional on Birdie.'}
+                  {pro.bio || 'Checked by Birdie and ready to work.'}
                 </p>
                 <div className="flex items-center justify-between text-xs font-bold text-[#615A5C]">
                   <span className="flex items-center gap-1">
@@ -124,19 +126,25 @@ export default function ProfessionalsPage() {
                         : 'neutral'
                   }
                 >
-                  {pro.availability.replace('_', ' ')}
+                  {statusLabel(pro.availability)}
                 </Badge>
                 <div className="mt-auto grid grid-cols-2 gap-3 pt-2">
                   <Link to={`/professionals/${pro.id}`}>
                     <Button variant="secondary" className="w-full" size="sm">
-                      View profile
+                      See profile
                     </Button>
                   </Link>
+                  {settings?.hires_enabled === false ? (
+                    <Button className="w-full" size="sm" disabled>
+                      Closed
+                    </Button>
+                  ) : (
                   <Link to={`/hire?pro=${pro.id}`}>
                     <Button className="w-full" size="sm">
-                      Hire pro
+                      Hire
                     </Button>
                   </Link>
+                  )}
                 </div>
               </div>
             </div>
@@ -146,7 +154,7 @@ export default function ProfessionalsPage() {
 
       {filtered.length === 0 && (
         <div className="py-20 text-center bg-white rounded-[1.75rem] border border-dashed border-slate-200">
-          <p className="text-[#615A5C] font-medium">No professionals match these filters yet.</p>
+          <p className="text-[#615A5C] font-medium">Nobody matches that yet. Try a different search.</p>
         </div>
       )}
     </div>

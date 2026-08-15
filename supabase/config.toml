@@ -12,3 +12,21 @@ verify_jwt = false
 
 [functions.paystack-transfer]
 verify_jwt = true
+
+[functions.paystack-verify]
+verify_jwt = true
+
+[functions.paystack-refund]
+verify_jwt = true
+
+[functions.paystack-banks]
+verify_jwt = true
+
+[functions.send-email]
+verify_jwt = true
+
+[functions.review-screen]
+verify_jwt = true
+
+[functions.paystack-settings]
+verify_jwt = true

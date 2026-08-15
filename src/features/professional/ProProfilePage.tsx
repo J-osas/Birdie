@@ -297,7 +297,7 @@ export default function ProProfilePage() {
                   onChange={(e) => setYearsExperience(e.target.value)}
                 />
                 <p className="text-[10px] text-slate-400 font-medium">
-                  Listed rate is indicative — final pay is agreed after consultation.
+                  This is only a guide. The real price is agreed on the call with the family.
                 </p>
               </div>
             </div>

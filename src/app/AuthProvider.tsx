@@ -3,6 +3,7 @@ import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import { authService } from '@/services/authService';
 import { dataService } from '@/services/dataService';
 import { splitName } from '@/lib/utils';
+import GaTracker from '@/lib/GaTracker';
 import {
   PlatformSettings,
   ProfessionalProfile,
@@ -146,7 +147,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [status, user, settings, categories, proProfile, blockedReason, refresh]
   );
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={value}>
+      <GaTracker storedId={settings?.ga_measurement_id} />
+      {children}
+    </AuthContext.Provider>
+  );
 }
 
 export function useAuth() {

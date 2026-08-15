@@ -41,16 +41,23 @@ Policies: only owner + staff can read private objects.
 
 ## Edge Functions secrets
 
-Deploy functions under `supabase/functions/*` and set:
+Deploy functions under `supabase/functions/*` (`npx supabase functions deploy --project-ref wajiuwphekflyayjwwmt --use-api`) and set:
 
 - `PAYSTACK_SECRET_KEY`
 - `SUPABASE_SERVICE_ROLE_KEY`
 - `SUPABASE_URL`
 - `SUPABASE_ANON_KEY`
+- `RESEND_API_KEY` (failed-charge emails; skipped with a log if missing)
+- `RESEND_FROM` (optional, default `Birdie <hello@birdie.ng>`)
+- `SITE_URL` (optional, default `https://birdie-alpha.vercel.app`)
+
+Functions: `paystack-initialize`, `paystack-webhook` (JWT off), `paystack-verify`, `paystack-transfer`, `paystack-refund`, `paystack-banks`, `send-email`.
 
 Point Paystack webhook URL to:
 
 `https://<project-ref>.supabase.co/functions/v1/paystack-webhook`
+
+Paystack Transfers must be enabled on the business account for professional payouts.
 
 ## Rotate leaked keys
 

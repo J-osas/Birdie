@@ -11,6 +11,7 @@ import {
   Shield,
   TrendingUp,
 } from 'lucide-react';
+import { PAYMENT_FAQS } from '@/data/paymentCopy';
 import { CATEGORIES } from '@/data/constants';
 import { IMAGES, categoryImage } from '@/data/images';
 import { Button } from '@/components/ui/Button';
@@ -32,20 +33,13 @@ function Reveal({ children, className }: { children: React.ReactNode; className?
 
 const FAQS = [
   {
-    q: 'How does Birdie vet professionals?',
-    a: 'Every professional submits identity documents, guarantor details, and completes a category-specific skills assessment. Birdie ops reviews the file before granting a Verified badge. Unverified pros may appear with a Pending verification tag.',
+    q: 'How does Birdie check the people on this site?',
+    a: 'Everyone sends us their ID, gives us people who can speak for them, and takes a short test for the job they want to do. A person at Birdie reads the whole file before we give anyone a Verified badge. If someone is still being checked, you will see that on their profile.',
   },
+  ...PAYMENT_FAQS,
   {
-    q: 'What is the consultation fee?',
-    a: 'A consultation fee is charged once per hire request. It covers matching support and contract alignment before escrow. The amount is set in platform settings (default ₦10,000).',
-  },
-  {
-    q: 'How does escrow protect both sides?',
-    a: 'After consultation, agreed service funds go into escrow. Professionals see protected earnings; clients release payment when milestones are met — instead of informal cash handoffs.',
-  },
-  {
-    q: 'Can I hire without choosing a specific professional?',
-    a: 'Yes. Start from Hire a Professional, pick a category, browse available pros (verified and pending-tagged), then continue through job scope and consultation.',
+    q: 'Can I start without picking one person?',
+    a: 'Yes. Press "Find someone to help", choose the kind of help you need, and look through the people we have. You can also tell us what you need and we will match you.',
   },
 ];
 
@@ -71,20 +65,21 @@ export default function HomePage() {
           <div className="max-w-2xl space-y-8">
             <p className="text-4xl md:text-6xl font-bold tracking-tight text-[#660033]">Birdie</p>
             <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold text-[#0A0A0A] tracking-tight leading-[1.05]">
-              Trusted domestic staff for Lagos homes.
+              Good help for your home in Lagos.
             </h1>
             <p className="text-lg md:text-xl text-[#615A5C] font-medium leading-relaxed max-w-xl">
-              Vetted drivers, nannies, housekeepers, chefs, gardeners, and security — with escrow-backed hiring and dignity for every professional.
+              Drivers, nannies, house help, chefs, gardeners and security. We check every person before you meet them, and
+              we hold your money safely until the job is done.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 pt-2">
               <Link to="/hire">
                 <Button size="lg" className="w-full sm:w-auto hover-lift">
-                  Hire a Professional <ArrowRight size={20} />
+                  Find someone to help <ArrowRight size={20} />
                 </Button>
               </Link>
               <Link to="/register?role=professional">
                 <Button size="lg" variant="secondary" className="w-full sm:w-auto hover-lift">
-                  Apply as a Provider
+                  I am looking for work
                 </Button>
               </Link>
             </div>
@@ -96,9 +91,9 @@ export default function HomePage() {
       <Reveal className="w-full px-6 md:w-[90vw] md:mx-auto -mt-12 relative z-20">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
           {[
-            { label: 'Multi-tier vetting', value: 'Identity + clearance', icon: ShieldCheck },
-            { label: 'Escrow-backed pay', value: 'Funds protected', icon: CheckCircle2 },
-            { label: 'Lagos-first matching', value: 'Built for homes here', icon: Clock },
+            { label: 'We check everyone', value: 'ID and references', icon: ShieldCheck },
+            { label: 'Your money is safe', value: 'We hold it for you', icon: CheckCircle2 },
+            { label: 'Made for Lagos', value: 'We know this city', icon: Clock },
           ].map((stat) => (
             <div
               key={stat.label}
@@ -120,9 +115,9 @@ export default function HomePage() {
       <section className="w-full px-6 md:w-[90vw] md:mx-auto py-24 md:py-28 space-y-14">
         <Reveal>
           <SectionHeading
-            eyebrow="Categories"
-            title="Find the right support for your home"
-            subtitle="Browse vetted professionals across the roles Lagos households need most."
+            eyebrow="What we do"
+            title="Pick the kind of help you need"
+            subtitle="These are the jobs Lagos homes ask us for most. Every person here has been checked."
           />
         </Reveal>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -144,10 +139,10 @@ export default function HomePage() {
                     {cat}
                   </h3>
                   <p className="text-[#615A5C] font-medium text-sm leading-relaxed">
-                    Professional and vetted {cat.toLowerCase()}s ready for your household.
+                    Checked {cat.toLowerCase()}s who are ready to start work in your home.
                   </p>
                   <div className="flex items-center gap-1 text-[10px] font-bold text-[#660033] uppercase tracking-widest pt-1">
-                    Browse professionals <ChevronRight size={14} />
+                    See the people <ChevronRight size={14} />
                   </div>
                 </div>
               </Link>
@@ -162,25 +157,30 @@ export default function HomePage() {
           <Reveal className="space-y-10">
             <SectionHeading
               eyebrow="How it works"
-              title="Smooth process, clear protection"
-              subtitle="Search & vetting → consultation & escrow → service delivery."
+              title="Four simple steps"
+              subtitle="Look, talk, pay, and get to work. Birdie stays with you the whole way."
             />
             <div className="space-y-6">
               {[
                 {
                   n: '01',
-                  t: 'Search & vet',
-                  d: 'Browse profiles with verified or pending tags. Every pro completes docs, guarantors, and a skills assessment.',
+                  t: 'Look at the people',
+                  d: 'Every person here has sent us their ID, given us references, and passed a short test for their job.',
                 },
                 {
                   n: '02',
-                  t: 'Consult & escrow',
-                  d: 'Pay a consultation fee per hire, align the contract, then fund escrow for secure payouts.',
+                  t: 'Pay a small meeting fee and talk to us',
+                  d: 'We set up a call, learn what your home needs, and agree the right person, the hours and the price.',
                 },
                 {
                   n: '03',
-                  t: 'Deliver with dignity',
-                  d: 'Professionals work with clear terms. Clients get support. Funds release when milestones are met.',
+                  t: 'Pay your bill',
+                  d: 'We send you one clear bill. You pay it with your card and Birdie holds the money, not the professional.',
+                },
+                {
+                  n: '04',
+                  t: 'Work starts, then we pay',
+                  d: 'When the job is done and you are happy, we pay the professional. If the work never happens, you get your money back.',
                 },
               ].map((s) => (
                 <div key={s.n} className="flex gap-5 p-5 rounded-2xl border border-slate-100 bg-[#F8FAFB]">
@@ -210,16 +210,16 @@ export default function HomePage() {
         </Reveal>
         <Reveal className="space-y-8">
           <SectionHeading
-            eyebrow="For providers"
-            title="Dignity for domestic professionals"
-            subtitle="Structured onboarding, competitive rates, escrow-backed payouts, and ongoing support — not informal exploitation."
+            eyebrow="If you are looking for work"
+            title="Work with respect and get paid on time"
+            subtitle="We agree your pay before you start, we hold the money so it cannot disappear, and we are here if anything goes wrong."
           />
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             {[
-              { icon: Heart, label: 'Fair treatment' },
-              { icon: Award, label: 'Training & growth' },
-              { icon: Shield, label: 'Safety & support' },
-              { icon: TrendingUp, label: 'Clear earnings' },
+              { icon: Heart, label: 'Treated well' },
+              { icon: Award, label: 'Learn and grow' },
+              { icon: Shield, label: 'Safe and supported' },
+              { icon: TrendingUp, label: 'You know your pay' },
             ].map((item) => (
               <div key={item.label} className="flex gap-3 items-center">
                 <div className="w-10 h-10 rounded-xl bg-[#660033]/5 text-[#660033] flex items-center justify-center">
@@ -231,7 +231,7 @@ export default function HomePage() {
           </div>
           <Link to="/register?role=professional">
             <Button size="lg" className="hover-lift">
-              Join the network <ArrowRight size={18} />
+              Sign up for work <ArrowRight size={18} />
             </Button>
           </Link>
         </Reveal>
@@ -246,10 +246,11 @@ export default function HomePage() {
               “Birdie was born from a lifetime of living in a home that never stopped moving.”
             </h2>
             <p className="text-lg text-[#615A5C] font-medium leading-relaxed">
-              We’ve lived the friction on both sides. Birdie brings structure to domestic staffing in Nigeria.
+              We have seen how hard this is for families and for the people who work in their homes. Birdie is our way of
+              making it fair for both sides.
             </p>
             <Link to="/story" className="inline-flex items-center gap-3 font-bold text-[#660033] hover:gap-4 transition-all">
-              Read our full story <ArrowRight size={18} />
+              Read our story <ArrowRight size={18} />
             </Link>
           </Reveal>
           <Reveal>
@@ -264,12 +265,12 @@ export default function HomePage() {
       <section className="w-full px-6 md:w-[90vw] md:mx-auto py-24 space-y-12">
         <Reveal className="flex flex-col md:flex-row md:items-end justify-between gap-6">
           <SectionHeading
-            eyebrow="Insights"
-            title="Latest from Birdie"
-            subtitle="Guides on hiring, safety, and household management."
+            eyebrow="Reading"
+            title="Helpful things to read"
+            subtitle="Short guides on hiring, staying safe, and running a home well."
           />
           <Link to="/blog" className="text-[#660033] font-bold flex items-center gap-1 shrink-0">
-            View all <ChevronRight size={16} />
+            See all <ChevronRight size={16} />
           </Link>
         </Reveal>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -302,9 +303,9 @@ export default function HomePage() {
         <div className="w-full px-6 md:w-[90vw] md:mx-auto grid lg:grid-cols-2 gap-12">
           <Reveal>
             <SectionHeading
-              eyebrow="FAQ"
-              title="Frequently asked questions"
-              subtitle="Clear answers about vetting, fees, and how Birdie protects households and professionals."
+              eyebrow="Questions"
+              title="Questions people ask us"
+              subtitle="Straight answers about how we check people, what you pay, and how we keep your money safe."
             />
           </Reveal>
           <Reveal className="space-y-3">
@@ -321,21 +322,19 @@ export default function HomePage() {
           <div className="bg-[#660033] rounded-[2.5rem] md:rounded-[3.5rem] p-12 md:p-20 text-center space-y-8 text-white relative overflow-hidden">
             <div className="absolute top-0 right-0 w-72 h-72 bg-white/5 rounded-full -mr-36 -mt-36" />
             <div className="relative z-10 space-y-8">
-              <h2 className="text-3xl md:text-5xl font-bold tracking-tight">
-                Ready for domestic support done right?
-              </h2>
+              <h2 className="text-3xl md:text-5xl font-bold tracking-tight">Ready to get help at home?</h2>
               <p className="text-white/70 text-lg md:text-xl max-w-2xl mx-auto font-medium">
-                Transparent hiring, vetted professionals, and escrow protection — for families and providers.
+                Clear prices, people we have checked, and your money held safely until the work is done.
               </p>
               <div className="flex flex-col sm:flex-row justify-center gap-4">
                 <Link to="/hire">
                   <Button size="lg" variant="inverse" className="w-full sm:w-auto">
-                    Hire a Professional
+                    Find someone to help
                   </Button>
                 </Link>
                 <Link to="/register?role=professional">
                   <Button size="lg" variant="outlineOnBrand" className="w-full sm:w-auto">
-                    Join our network
+                    I am looking for work
                   </Button>
                 </Link>
               </div>

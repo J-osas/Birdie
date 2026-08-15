@@ -24,6 +24,49 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+.app-shell {
+  --app-canvas: #f8fafb;
+  --app-surface: #ffffff;
+  --app-ink: #0a0a0a;
+  --app-muted: #615a5c;
+  --app-border: #e2e8f0;
+  --app-hover: #f8fafb;
+  background-color: var(--app-canvas);
+  color: var(--app-ink);
+}
+
+.app-shell[data-theme='dark'] {
+  --app-canvas: #12080c;
+  --app-surface: #1c1016;
+  --app-ink: #f6f1f3;
+  --app-muted: #c9b8bf;
+  --app-border: #3d2a33;
+  --app-hover: #26151c;
+  color-scheme: dark;
+}
+
+.app-shell[data-theme='dark'] .bg-white {
+  background-color: var(--app-surface);
+}
+
+.app-shell[data-theme='dark'] .bg-\[\#F8FAFB\] {
+  background-color: var(--app-hover);
+}
+
+.app-shell[data-theme='dark'] .border-slate-200,
+.app-shell[data-theme='dark'] .border-slate-100 {
+  border-color: var(--app-border);
+}
+
+.app-shell[data-theme='dark'] .text-\[\#0A0A0A\] {
+  color: var(--app-ink);
+}
+
+.app-shell[data-theme='dark'] .text-slate-700,
+.app-shell[data-theme='dark'] .text-slate-600 {
+  color: var(--app-muted);
+}
+
 .custom-scrollbar::-webkit-scrollbar {
   width: 4px;
   height: 4px;

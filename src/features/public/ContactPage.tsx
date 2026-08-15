@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { PAYMENT_FAQS } from '@/data/paymentCopy';
 import { Button } from '@/components/ui/Button';
 import { Input, Label, TextArea, Select } from '@/components/ui/Input';
 import { useAuth } from '@/app/AuthProvider';
@@ -9,15 +10,12 @@ import { SectionHeading } from './sections/SectionHeading';
 const FAQS = [
   {
     q: 'What does Birdie do?',
-    a: 'Birdie connects households with vetted domestic professionals — nannies, house help, chefs, gardeners, drivers, and security — with structured hiring and escrow protection.',
+    a: 'We help Lagos homes find good help: nannies, house help, chefs, gardeners, drivers and security. We check each person, agree the job and the price with you, and hold your money until the work is done.',
   },
+  ...PAYMENT_FAQS.slice(0, 4),
   {
-    q: 'How much is the consultation fee?',
-    a: 'A consultation fee is charged once per hire request. The default is ₦10,000 and can be configured by Birdie operations.',
-  },
-  {
-    q: 'Are all professionals verified?',
-    a: 'Verified professionals have completed admin review. Unverified professionals may appear with a Pending verification tag while they complete vetting.',
+    q: 'Has everyone on the site been checked?',
+    a: 'Anyone with a Verified badge has been through our full check by a person at Birdie. If someone is still being checked you will see that on their profile, so you always know.',
   },
 ];
 
@@ -32,12 +30,30 @@ export default function ContactPage() {
         <div className="space-y-8">
           <SectionHeading
             eyebrow="Contact"
-            title="Talk to Birdie"
-            subtitle="Questions about hiring, vetting, or joining as a professional? We’re here for Lagos households and providers."
+            title="Talk to us"
+            subtitle="Want help hiring someone, or want to work with us? Send us a note and a real person will reply."
           />
-          <p className="text-sm font-bold text-[#660033]">
-            Support: {settings?.support_email || 'support@birdie.ng'} · Consultation fee: ₦
-            {fee.toLocaleString()}
+          <p className="text-sm font-bold text-[#660033] space-y-1">
+            <span className="block">
+              Write to {settings?.support_email || 'support@birdie.ng'}
+              {settings?.consultation_fee_ngn != null ? ` · Meeting fee ₦${Number(settings.consultation_fee_ngn).toLocaleString()}` : ` · Meeting fee ₦${fee.toLocaleString()}`}
+            </span>
+            {settings?.support_phone && <span className="block">{settings.support_phone}</span>}
+            {settings?.office_address && <span className="block font-medium text-[#615A5C]">{settings.office_address}</span>}
+            {settings?.support_whatsapp && (
+              <a
+                className="block underline underline-offset-4"
+                href={
+                  settings.support_whatsapp.startsWith('http')
+                    ? settings.support_whatsapp
+                    : `https://wa.me/${settings.support_whatsapp.replace(/[^\d]/g, '')}`
+                }
+                target="_blank"
+                rel="noreferrer"
+              >
+                WhatsApp
+              </a>
+            )}
           </p>
           <div className="aspect-[4/3] rounded-[2.125rem] overflow-hidden border border-slate-200">
             <img src={IMAGES.contact} alt="Contact Birdie" className="w-full h-full object-cover" />
@@ -53,8 +69,8 @@ export default function ContactPage() {
         >
           {sent ? (
             <div className="py-16 text-center space-y-3">
-              <p className="text-2xl font-bold text-[#0A0A0A]">Message received</p>
-              <p className="text-[#615A5C] font-medium">Our team will respond shortly.</p>
+              <p className="text-2xl font-bold text-[#0A0A0A]">We got your message</p>
+              <p className="text-[#615A5C] font-medium">Someone from Birdie will get back to you soon.</p>
             </div>
           ) : (
             <>
@@ -67,19 +83,19 @@ export default function ContactPage() {
                 <Input required type="email" placeholder="you@email.com" />
               </div>
               <div className="space-y-1.5">
-                <Label>Topic</Label>
+                <Label>What is this about?</Label>
                 <Select defaultValue="hiring">
-                  <option value="hiring">Hiring help</option>
-                  <option value="provider">Becoming a provider</option>
-                  <option value="other">Other</option>
+                  <option value="hiring">I want to hire someone</option>
+                  <option value="provider">I am looking for work</option>
+                  <option value="other">Something else</option>
                 </Select>
               </div>
               <div className="space-y-1.5">
-                <Label>Message</Label>
-                <TextArea required rows={5} placeholder="How can we help?" />
+                <Label>Your message</Label>
+                <TextArea required rows={5} placeholder="Tell us how we can help…" />
               </div>
               <Button type="submit" className="w-full" size="lg">
-                Send message
+                Send
               </Button>
             </>
           )}
@@ -87,7 +103,7 @@ export default function ContactPage() {
       </div>
 
       <div className="max-w-3xl space-y-4">
-        <h2 className="text-2xl font-bold text-[#0A0A0A]">FAQ</h2>
+        <h2 className="text-2xl font-bold text-[#0A0A0A]">Questions people ask us</h2>
         {FAQS.map((f) => (
           <FaqItem key={f.q} q={f.q} a={f.a} />
         ))}

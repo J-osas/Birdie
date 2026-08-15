@@ -6,10 +6,10 @@ import { useAuth } from '@/app/AuthProvider';
 import { cn } from '@/lib/utils';
 
 const NAV = [
-  { to: '/professionals', label: 'Find Pros' },
-  { to: '/about', label: 'About' },
-  { to: '/story', label: 'Our Story' },
-  { to: '/blog', label: 'Insights' },
+  { to: '/professionals', label: 'Find help' },
+  { to: '/about', label: 'About us' },
+  { to: '/story', label: 'Our story' },
+  { to: '/blog', label: 'Reading' },
   { to: '/contact', label: 'Contact' },
 ];
 
@@ -20,7 +20,7 @@ const linkClass = ({ isActive }: { isActive: boolean }) =>
   );
 
 export default function PublicHeader() {
-  const { user, status } = useAuth();
+  const { user, status, settings } = useAuth();
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
 
@@ -68,11 +68,11 @@ export default function PublicHeader() {
                   Sign in
                 </Button>
               </Link>
-              <Link to="/hire" className="hidden sm:block">
-                <Button size="sm">Hire a Pro</Button>
+              <Link to={settings?.hires_enabled === false ? '/professionals' : '/hire'} className="hidden sm:block">
+                <Button size="sm">{settings?.hires_enabled === false ? 'See people' : 'Find help'}</Button>
               </Link>
               <Link to="/register" className="sm:hidden">
-                <Button size="sm">Join</Button>
+                <Button size="sm">Sign up</Button>
               </Link>
             </>
           )}
@@ -102,12 +102,14 @@ export default function PublicHeader() {
             </NavLink>
           ))}
           <div className="flex flex-col gap-2 pt-2">
+            {settings?.hires_enabled !== false && (
             <Link to="/hire" onClick={() => setOpen(false)}>
-              <Button className="w-full">Hire a Professional</Button>
+              <Button className="w-full">Find someone to help</Button>
             </Link>
+            )}
             <Link to="/register?role=professional" onClick={() => setOpen(false)}>
               <Button variant="secondary" className="w-full">
-                Apply as Provider
+                I am looking for work
               </Button>
             </Link>
           </div>

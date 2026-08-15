@@ -15,9 +15,9 @@ export function BlogArchive() {
   return (
     <div className="w-full px-6 md:w-[90vw] md:mx-auto py-16 space-y-12">
       <SectionHeading
-        eyebrow="Insights"
-        title="Professional tips for households"
-        subtitle="Guides on hiring, safety, and household management in Lagos."
+        eyebrow="Reading"
+        title="Helpful things to read"
+        subtitle="Short guides on hiring, staying safe, and running a home in Lagos."
       />
       <div className="grid md:grid-cols-3 gap-8">
         {posts.map((post) => (
@@ -59,9 +59,9 @@ export function BlogSingle() {
   if (!post) {
     return (
       <div className="py-24 text-center text-[#615A5C] font-medium">
-        Article not found.{' '}
+        We could not find that page.{' '}
         <Link to="/blog" className="text-[#660033] font-bold">
-          Back to blog
+          See everything we have written
         </Link>
       </div>
     );
@@ -73,7 +73,7 @@ export function BlogSingle() {
         to="/blog"
         className="inline-flex items-center gap-2 text-[#615A5C] font-bold text-sm hover:text-[#660033]"
       >
-        <ArrowLeft size={16} /> All articles
+        <ArrowLeft size={16} /> Back to all reading
       </Link>
       <p className="text-[10px] font-bold uppercase tracking-widest text-[#660033]">{post.category}</p>
       <h1 className="text-4xl md:text-5xl font-bold text-[#0A0A0A] tracking-tight">{post.title}</h1>

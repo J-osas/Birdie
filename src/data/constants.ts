@@ -66,11 +66,71 @@ export const LAGOS_LOCATIONS = [
 
 export const DEFAULT_CONSULTATION_FEE = 10000;
 
+// Plain-English wording for every status the app shows a person.
+const STATUS_LABELS: Record<string, string> = {
+  // Hire requests
+  pending: 'New request',
+  awaiting_consultation_pay: 'Waiting for meeting fee',
+  consultation_paid: 'Meeting fee paid',
+  assigned: 'Matched',
+  accepted: 'Accepted',
+  awaiting_escrow: 'Waiting for your payment',
+  funded: 'Birdie is holding your money',
+  active: 'Job running',
+  completed: 'Job done',
+  settled: 'Professional has been paid',
+  cancelled: 'Cancelled',
+  disputed: 'Being sorted out',
+  // Payment status written on a hire
+  awaiting_consultation: 'Waiting for meeting fee',
+  escrowed: 'Birdie is holding your money',
+  released: 'Paid out',
+  unpaid: 'Not paid yet',
+  // Payments and money movements
+  initiated: 'Started',
+  success: 'Paid',
+  failed: 'Did not go through',
+  refunded: 'Money sent back',
+  paid: 'Paid',
+  in_escrow: 'Held by Birdie',
+  pending_release: 'Waiting to be paid out',
+  successful: 'Done',
+  consultation: 'Meeting fee',
+  escrow: 'Job payment',
+  escrow_credit: 'Money held for you',
+  escrow_debit: 'Money moved out of hold',
+  commission: 'Birdie fee',
+  // Invoices
+  draft: 'Being prepared',
+  sent: 'Waiting for payment',
+  // Reviews
+  published: 'Live',
+  flagged: 'Not approved',
+  // Professionals and withdrawals
+  verified: 'Verified',
+  approved: 'Approved',
+  rejected: 'Not approved',
+  under_review: 'Being checked',
+  suspended: 'Paused',
+  requested: 'Requested',
+  available: 'Available',
+  busy: 'Busy',
+  unavailable: 'Not available',
+  on_job: 'On a job',
+};
+
+export function statusLabel(status?: string | null) {
+  if (!status) return '—';
+  return STATUS_LABELS[status] || status.replace(/_/g, ' ');
+}
+
 export function getStatusStyle(status: string) {
   switch (status) {
     case 'pending':
     case 'awaiting_consultation_pay':
     case 'awaiting_escrow':
+    case 'draft':
+    case 'sent':
       return 'bg-amber-50 text-amber-700 border-amber-200';
     case 'active':
     case 'funded':
@@ -81,6 +141,7 @@ export function getStatusStyle(status: string) {
     case 'settled':
     case 'verified':
     case 'success':
+    case 'paid':
       return 'bg-emerald-50 text-emerald-700 border-emerald-200';
     case 'cancelled':
     case 'rejected':

@@ -27,6 +27,7 @@ import {
 import { useAuth } from '@/app/AuthProvider';
 import { UserRole } from '@/types';
 import { IMAGES } from '@/data/images';
+import { BrandLogo } from '@/features/public/BrandLogo';
 import StaffNotificationsBell from '@/features/app/StaffNotificationsBell';
 import { getTheme, resolveTheme, type AppTheme } from '@/lib/theme';
 
@@ -101,9 +102,7 @@ export default function AppShell() {
   if (status === 'loading') {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center gap-3">
-        <div className="w-14 h-14 bg-[#660033] rounded-2xl text-white font-bold text-2xl flex items-center justify-center animate-pulse">
-          B
-        </div>
+        <BrandLogo markClassName="h-12 animate-pulse" />
         <div className="flex items-center gap-2 text-[#660033] text-sm font-bold uppercase tracking-widest">
           <Loader2 className="animate-spin" size={16} /> Connecting to Birdie…
         </div>
@@ -115,9 +114,7 @@ export default function AppShell() {
     return (
       <div className="min-h-screen flex items-center justify-center p-6 bg-[#F8FAFB]">
         <div className="max-w-md bg-white border border-slate-200 rounded-[1.75rem] p-10 text-center space-y-4 shadow-xl">
-          <div className="w-12 h-12 mx-auto rounded-xl bg-[#660033] text-white font-bold text-xl flex items-center justify-center">
-            B
-          </div>
+          <BrandLogo className="mx-auto" markClassName="h-12" />
           <h1 className="text-2xl font-bold text-[#0A0A0A]">You cannot sign in right now</h1>
           <p className="text-sm text-[#615A5C] font-medium">{blockedReason}</p>
           <button
@@ -144,9 +141,7 @@ export default function AppShell() {
     return (
       <div className="min-h-screen flex items-center justify-center p-6 bg-[#F8FAFB]">
         <div className="max-w-md bg-white border border-slate-200 rounded-[1.75rem] p-10 text-center space-y-4 shadow-xl">
-          <div className="w-12 h-12 mx-auto rounded-xl bg-[#660033] text-white font-bold text-xl flex items-center justify-center">
-            B
-          </div>
+          <BrandLogo className="mx-auto" markClassName="h-12" />
           <h1 className="text-2xl font-bold text-[#0A0A0A]">Birdie is closed for now</h1>
           <p className="text-sm text-[#615A5C] font-medium">
             Only the Birdie team can sign in at the moment. Public pages are still open. Please try again later.
@@ -246,16 +241,13 @@ export default function AppShell() {
   return (
     <div className="app-shell min-h-screen flex" data-theme={resolvedTheme}>
       <aside className="hidden md:flex w-64 shrink-0 flex-col h-screen sticky top-0 border-r border-[var(--app-border)] bg-[var(--app-surface)] p-6 gap-8 overflow-y-auto">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-[#660033] text-white font-bold flex items-center justify-center">
-            B
-          </div>
-          <div>
-            <p className="font-bold text-[var(--app-ink)]">Birdie</p>
-            {isStaff && (
-              <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">{user.role}</p>
-            )}
-          </div>
+        <div>
+          <Link to="/app">
+            <BrandLogo variant={resolvedTheme === 'dark' ? 'dark' : 'light'} />
+          </Link>
+          {isStaff && (
+            <p className="mt-1 text-[10px] font-bold uppercase tracking-widest text-slate-400">{user.role}</p>
+          )}
         </div>
         <nav className="flex-1 space-y-1">
           {links.map((l) => (
@@ -313,7 +305,13 @@ export default function AppShell() {
 
       <div className="flex-1 flex flex-col min-w-0 min-h-screen">
         <header className="sticky top-0 z-30 flex items-center justify-between px-4 md:px-8 h-14 md:h-16 border-b border-[var(--app-border)] bg-[var(--app-surface)]">
-          <p className="font-bold md:hidden">Birdie</p>
+          <Link to="/app" className="md:hidden">
+            <BrandLogo
+              variant={resolvedTheme === 'dark' ? 'dark' : 'light'}
+              markClassName="h-7"
+              className="gap-1.5"
+            />
+          </Link>
           <div className="hidden md:block" />
           <div className="ml-auto flex items-center gap-1.5">
             {user && <StaffNotificationsBell userId={user.id} role={user.role} />}

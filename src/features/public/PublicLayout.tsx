@@ -1,6 +1,7 @@
 import { Link, Outlet } from 'react-router-dom';
 import PublicHeader from './PublicHeader';
 import { useAuth } from '@/app/AuthProvider';
+import { IMAGES } from '@/data/images';
 
 function whatsappHref(value: string) {
   const trimmed = value.trim();
@@ -34,13 +35,14 @@ export default function PublicLayout() {
       <footer className="mt-auto">
         <div className="bg-white border-t border-slate-100">
           <div className="w-full px-6 md:w-[90vw] md:mx-auto py-16 grid grid-cols-1 md:grid-cols-4 gap-12">
-            <div className="md:col-span-2 space-y-4">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-[#660033] text-white font-bold flex items-center justify-center">
-                  B
-                </div>
-                <p className="text-2xl font-bold text-[#0A0A0A]">{name}</p>
-              </div>
+            <div className="md:col-span-2 space-y-5">
+              <Link to="/" className="inline-flex items-center rounded-2xl bg-[#660033] px-5 py-4">
+                <img
+                  src={IMAGES.logoOnDark}
+                  alt="Birdie"
+                  className="h-10 w-auto max-w-[200px] object-contain object-left"
+                />
+              </Link>
               <p className="text-[#615A5C] font-medium max-w-md leading-relaxed">
                 Good help for Lagos homes. We check every person, agree the price up front, and hold your money until the
                 work is done.

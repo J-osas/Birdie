@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
-import { Link, NavLink } from 'react-router-dom';
-import { Menu, X } from 'lucide-react';
+import { Link, NavLink, useLocation } from 'react-router-dom';
+import { ArrowRight, Menu, X } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { useAuth } from '@/app/AuthProvider';
+import { BrandLogo } from './BrandLogo';
+import { IMAGES } from '@/data/images';
 import { cn } from '@/lib/utils';
 
 const NAV = [
@@ -13,16 +15,14 @@ const NAV = [
   { to: '/contact', label: 'Contact' },
 ];
 
-const linkClass = ({ isActive }: { isActive: boolean }) =>
-  cn(
-    'text-sm font-semibold tracking-tight transition-colors',
-    isActive ? 'text-[#660033]' : 'text-[#615A5C] hover:text-[#660033]'
-  );
-
 export default function PublicHeader() {
   const { user, status, settings } = useAuth();
+  const location = useLocation();
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
+  const hiresOpen = settings?.hires_enabled !== false;
+  const hireTo = hiresOpen ? '/hire' : '/professionals';
+  const signedIn = status === 'authenticated' && user;
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);
@@ -30,6 +30,24 @@ export default function PublicHeader() {
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
+
+  useEffect(() => {
+    setOpen(false);
+  }, [location.pathname]);
+
+  useEffect(() => {
+    if (!open) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpen(false);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => {
+      document.body.style.overflow = prev;
+      window.removeEventListener('keydown', onKey);
+    };
+  }, [open]);
 
   return (
     <header
@@ -41,24 +59,35 @@ export default function PublicHeader() {
       )}
     >
       <div className="w-full px-6 md:w-[90vw] md:mx-auto flex items-center justify-between h-[72px]">
-        <Link to="/" className="flex items-center gap-3 group" onClick={() => setOpen(false)}>
-          <div className="w-10 h-10 rounded-xl bg-[#660033] text-white font-bold flex items-center justify-center text-lg group-hover:-translate-y-0.5 transition-transform">
-            B
-          </div>
-          <span className="text-xl font-bold tracking-tight text-[#0A0A0A]">Birdie</span>
+        <Link to="/" className="group shrink-0 relative z-50" onClick={() => setOpen(false)}>
+          <BrandLogo className="group-hover:-translate-y-0.5 transition-transform" />
         </Link>
 
-        <nav className="hidden lg:flex items-center gap-8 absolute left-1/2 -translate-x-1/2">
+        <nav
+          className="hidden lg:flex items-center gap-1 p-1 rounded-full bg-[#F8FAFB] border border-slate-200/80"
+          aria-label="Primary"
+        >
           {NAV.map((item) => (
-            <NavLink key={item.to} to={item.to} className={linkClass}>
+            <NavLink
+              key={item.to}
+              to={item.to}
+              className={({ isActive }) =>
+                cn(
+                  'px-4 py-2 rounded-full text-sm font-semibold tracking-tight transition-all',
+                  isActive
+                    ? 'bg-white text-[#660033] shadow-sm'
+                    : 'text-[#615A5C] hover:text-[#660033] hover:bg-white/70'
+                )
+              }
+            >
               {item.label}
             </NavLink>
           ))}
         </nav>
 
         <div className="flex items-center gap-2 sm:gap-3">
-          {status === 'authenticated' && user ? (
-            <Link to="/app">
+          {signedIn ? (
+            <Link to="/app" className="hidden sm:block">
               <Button size="sm">Dashboard</Button>
             </Link>
           ) : (
@@ -68,19 +97,17 @@ export default function PublicHeader() {
                   Sign in
                 </Button>
               </Link>
-              <Link to={settings?.hires_enabled === false ? '/professionals' : '/hire'} className="hidden sm:block">
-                <Button size="sm">{settings?.hires_enabled === false ? 'See people' : 'Find help'}</Button>
-              </Link>
-              <Link to="/register" className="sm:hidden">
-                <Button size="sm">Sign up</Button>
+              <Link to={hireTo} className="hidden sm:block">
+                <Button size="sm">{hiresOpen ? 'Find help' : 'See people'}</Button>
               </Link>
             </>
           )}
           <button
             type="button"
-            className="lg:hidden w-10 h-10 rounded-xl border border-slate-200 flex items-center justify-center text-[#0A0A0A]"
+            className="lg:hidden w-11 h-11 rounded-full border border-slate-200 flex items-center justify-center text-[#0A0A0A] hover:border-[#660033]/30 hover:text-[#660033] transition-colors"
             onClick={() => setOpen((v) => !v)}
-            aria-label="Menu"
+            aria-label={open ? 'Close menu' : 'Open menu'}
+            aria-expanded={open}
           >
             {open ? <X size={18} /> : <Menu size={18} />}
           </button>
@@ -88,30 +115,77 @@ export default function PublicHeader() {
       </div>
 
       {open && (
-        <div className="lg:hidden border-t border-slate-100 bg-white px-6 py-6 space-y-4 shadow-xl">
-          {NAV.map((item) => (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              className={({ isActive }) =>
-                cn('block text-base font-bold py-2', isActive ? 'text-[#660033]' : 'text-[#0A0A0A]')
-              }
+        <div
+          className="lg:hidden fixed inset-0 z-[60] min-h-[100dvh] bg-[#2B0116] text-white flex flex-col"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Menu"
+        >
+          <img
+            src={IMAGES.markLight}
+            alt=""
+            className="pointer-events-none absolute -right-10 bottom-10 w-64 opacity-[0.12]"
+          />
+          <div className="relative flex items-center justify-between px-6 h-[72px] shrink-0">
+            <Link to="/" onClick={() => setOpen(false)}>
+              <BrandLogo variant="dark" />
+            </Link>
+            <button
+              type="button"
+              className="w-11 h-11 rounded-full border border-white/20 flex items-center justify-center text-white hover:bg-white/10"
               onClick={() => setOpen(false)}
+              aria-label="Close menu"
             >
-              {item.label}
-            </NavLink>
-          ))}
-          <div className="flex flex-col gap-2 pt-2">
-            {settings?.hires_enabled !== false && (
-            <Link to="/hire" onClick={() => setOpen(false)}>
-              <Button className="w-full">Find someone to help</Button>
-            </Link>
+              <X size={18} />
+            </button>
+          </div>
+
+          <nav className="relative flex-1 overflow-y-auto px-6 py-6 flex flex-col justify-center gap-1">
+            {NAV.map((item) => (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                onClick={() => setOpen(false)}
+                className={({ isActive }) =>
+                  cn(
+                    'block text-3xl font-bold py-3 tracking-tight transition-colors',
+                    isActive ? 'text-[#E0B5CB]' : 'text-white hover:text-[#E0B5CB]'
+                  )
+                }
+              >
+                {item.label}
+              </NavLink>
+            ))}
+          </nav>
+
+          <div className="relative px-6 pb-10 pt-4 space-y-3 shrink-0">
+            {signedIn ? (
+              <Link to="/app" onClick={() => setOpen(false)}>
+                <Button size="lg" variant="inverse" className="w-full whitespace-nowrap">
+                  Dashboard <ArrowRight size={18} />
+                </Button>
+              </Link>
+            ) : (
+              <>
+                <Link to={hireTo} onClick={() => setOpen(false)}>
+                  <Button size="lg" variant="inverse" className="w-full whitespace-nowrap">
+                    {hiresOpen ? 'Find someone to help' : 'See people'} <ArrowRight size={18} />
+                  </Button>
+                </Link>
+                <Link to="/register?role=professional" onClick={() => setOpen(false)}>
+                  <Button size="lg" variant="outlineOnBrand" className="w-full whitespace-nowrap">
+                    I am looking for work
+                  </Button>
+                </Link>
+                <Link
+                  to="/login"
+                  onClick={() => setOpen(false)}
+                  className="block text-center text-sm font-bold text-[#E0B5CB] pt-1"
+                >
+                  Sign in
+                </Link>
+              </>
             )}
-            <Link to="/register?role=professional" onClick={() => setOpen(false)}>
-              <Button variant="secondary" className="w-full">
-                I am looking for work
-              </Button>
-            </Link>
           </div>
         </div>
       )}

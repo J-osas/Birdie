@@ -1,166 +1,352 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   ArrowRight,
-  ShieldCheck,
+  Award,
   CheckCircle2,
-  Clock,
   ChevronRight,
   Heart,
-  Award,
+  Mail,
+  MapPin,
+  Phone,
   Shield,
+  ShieldCheck,
   TrendingUp,
 } from 'lucide-react';
 import { PAYMENT_FAQS } from '@/data/paymentCopy';
 import { CATEGORIES } from '@/data/constants';
 import { IMAGES, categoryImage } from '@/data/images';
+import { HOME_PLACEHOLDER_PROS, HOME_PROOF, HOME_TESTIMONIALS } from '@/data/homePlaceholders';
 import { Button } from '@/components/ui/Button';
 import { dataService } from '@/services/dataService';
-import { BlogPost } from '@/types';
+import { BlogPost, ProfessionalProfile, ProfessionalStatus } from '@/types';
 import { SectionHeading } from './sections/SectionHeading';
 import { FaqItem } from './sections/FaqItem';
-import { useInView } from '@/lib/motion';
-import { cn } from '@/lib/utils';
-
-function Reveal({ children, className }: { children: React.ReactNode; className?: string }) {
-  const { ref, className: motionClass } = useInView<HTMLDivElement>();
-  return (
-    <div ref={ref} className={cn(motionClass, className)}>
-      {children}
-    </div>
-  );
-}
+import { Reveal } from './sections/Reveal';
+import { useAuth } from '@/app/AuthProvider';
 
 const FAQS = [
   {
     q: 'How does Birdie check the people on this site?',
     a: 'Everyone sends us their ID, gives us people who can speak for them, and takes a short test for the job they want to do. A person at Birdie reads the whole file before we give anyone a Verified badge. If someone is still being checked, you will see that on their profile.',
   },
-  ...PAYMENT_FAQS,
+  PAYMENT_FAQS[3],
   {
     q: 'Can I start without picking one person?',
     a: 'Yes. Press "Find someone to help", choose the kind of help you need, and look through the people we have. You can also tell us what you need and we will match you.',
   },
 ];
 
+type HomePro = {
+  id: string;
+  fullName: string;
+  category: string;
+  location: string;
+  photo: string;
+  live: boolean;
+};
+
+function toHomePro(p: ProfessionalProfile): HomePro {
+  return {
+    id: p.id,
+    fullName: p.fullName || 'A Birdie professional',
+    category: p.category,
+    location: p.location || 'Lagos',
+    photo: p.avatarUrl || categoryImage(p.category) || IMAGES.avatarFallback,
+    live: true,
+  };
+}
+
 export default function HomePage() {
+  const { settings } = useAuth();
   const [posts, setPosts] = useState<BlogPost[]>([]);
+  const [pros, setPros] = useState<HomePro[]>([]);
+  const hiresOpen = settings?.hires_enabled !== false;
+  const proOpen = settings?.reg_pro_enabled !== false;
+  const email = settings?.support_email || 'support@birdie.ng';
+  const phone = settings?.support_phone;
+  const hireTo = hiresOpen ? '/hire' : '/professionals';
+  const featured = posts[0];
 
   useEffect(() => {
     dataService.getBlogPosts().then(setPosts).catch(console.error);
+    dataService
+      .getPublicProfessionals()
+      .then((list) => {
+        const verified = list.filter(
+          (p) => p.status === ProfessionalStatus.VERIFIED || p.status === ProfessionalStatus.APPROVED
+        );
+        const pick = (verified.length ? verified : list).slice(0, 4).map(toHomePro);
+        const filled = [...pick];
+        let i = 0;
+        while (filled.length < 4 && i < HOME_PLACEHOLDER_PROS.length) {
+          const ph = HOME_PLACEHOLDER_PROS[i];
+          filled.push({
+            id: ph.id,
+            fullName: ph.fullName,
+            category: ph.category,
+            location: ph.location,
+            photo: ph.photo,
+            live: false,
+          });
+          i += 1;
+        }
+        setPros(filled);
+      })
+      .catch(() => {
+        setPros(
+          HOME_PLACEHOLDER_PROS.map((ph) => ({
+            id: ph.id,
+            fullName: ph.fullName,
+            category: ph.category,
+            location: ph.location,
+            photo: ph.photo,
+            live: false,
+          }))
+        );
+      });
   }, []);
+
+  const avatars = useMemo(
+    () => [IMAGES.homeReach1, IMAGES.homeReach2, IMAGES.homeTestimonial],
+    []
+  );
 
   return (
     <div>
-      {/* HERO — Recroot-style brand-forward */}
-      <section className="relative min-h-[90vh] flex items-center overflow-hidden bg-[#F8FAFB]">
-        <div
-          className="absolute inset-0 bg-cover bg-center"
-          style={{ backgroundImage: `url('${IMAGES.hero}')` }}
+      <section className="relative min-h-[88vh] flex items-end overflow-hidden">
+        <img
+          src={IMAGES.homeHero}
+          alt="A Lagos family at home"
+          className="absolute inset-0 w-full h-full object-cover object-center"
         />
-        <div className="absolute inset-0 bg-gradient-to-r from-[#F8FAFB] via-[#F8FAFB]/92 to-[#F8FAFB]/25" />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#F8FAFB] via-transparent to-[#F8FAFB]/40" />
+        <div className="absolute inset-0 bg-gradient-to-r from-[#2B0116]/92 via-[#660033]/75 to-[#660033]/15" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#2B0116]/50 via-transparent to-[#2B0116]/20" />
+        <img
+          src={IMAGES.markLight}
+          alt=""
+          className="pointer-events-none absolute -right-8 bottom-8 w-56 md:w-80 opacity-[0.12]"
+        />
 
-        <div className="relative z-10 w-full px-6 md:w-[90vw] md:mx-auto py-28 md:py-36">
-          <div className="max-w-2xl space-y-8">
-            <p className="text-4xl md:text-6xl font-bold tracking-tight text-[#660033]">Birdie</p>
-            <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold text-[#0A0A0A] tracking-tight leading-[1.05]">
-              Good help for your home in Lagos.
+        <div className="relative z-10 w-full px-6 md:w-[90vw] md:mx-auto py-16 md:py-24">
+          <div className="max-w-xl space-y-7">
+            <p className="text-[11px] font-bold uppercase tracking-[0.25em] text-[#E0B5CB]">Lagos home help</p>
+            <h1 className="font-bold text-4xl sm:text-5xl lg:text-[3.5rem] text-white tracking-tight leading-[1.08]">
+              Good help you can trust, for your home in Lagos.
             </h1>
-            <p className="text-lg md:text-xl text-[#615A5C] font-medium leading-relaxed max-w-xl">
-              Drivers, nannies, house help, chefs, gardeners and security. We check every person before you meet them, and
-              we hold your money safely until the job is done.
+            <p className="text-lg md:text-xl text-white/80 font-medium leading-relaxed">
+              Drivers, nannies, house help, chefs, gardeners and security. We check every person before you meet them,
+              and we hold your money safely until the job is done.
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 pt-2">
-              <Link to="/hire">
-                <Button size="lg" className="w-full sm:w-auto hover-lift">
+            <div className="flex flex-col lg:flex-row lg:items-center gap-5 pt-1">
+              <Link to={hireTo} className="inline-flex shrink-0">
+                <Button size="lg" variant="inverse" className="whitespace-nowrap hover-lift">
                   Find someone to help <ArrowRight size={20} />
                 </Button>
               </Link>
-              <Link to="/register?role=professional">
-                <Button size="lg" variant="secondary" className="w-full sm:w-auto hover-lift">
-                  I am looking for work
+              <div className="inline-flex items-center gap-3 bg-white/15 backdrop-blur-md border border-white/20 rounded-full pl-1.5 pr-4 py-1.5">
+                <div className="flex -space-x-3">
+                  {avatars.map((src) => (
+                    <img
+                      key={src}
+                      src={src}
+                      alt=""
+                      className="w-10 h-10 rounded-full object-cover border-2 border-white/80"
+                    />
+                  ))}
+                </div>
+                <p className="text-sm font-bold text-white leading-tight">
+                  {HOME_PROOF.families} {HOME_PROOF.familiesLabel}
+                </p>
+              </div>
+            </div>
+            {proOpen && (
+              <Link
+                to="/register?role=professional"
+                className="inline-flex text-sm font-bold text-[#E0B5CB] hover:text-white hover:underline underline-offset-4"
+              >
+                I am looking for work
+              </Link>
+            )}
+            <div className="flex flex-wrap gap-2 pt-2 md:hidden">
+              {CATEGORIES.map((cat) => (
+                <Link
+                  key={cat}
+                  to={`/professionals?category=${encodeURIComponent(cat)}`}
+                  className="px-3 py-1.5 rounded-full bg-white/95 text-[#660033] text-xs font-bold shadow-sm border border-white"
+                >
+                  {cat}
+                </Link>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="hidden md:flex absolute right-6 lg:right-[5vw] bottom-16 z-10 flex-col items-end gap-2 max-w-[220px]">
+          {CATEGORIES.map((cat) => (
+            <Link
+              key={cat}
+              to={`/professionals?category=${encodeURIComponent(cat)}`}
+              className="px-4 py-1.5 rounded-full bg-white/95 text-[#660033] text-xs font-bold shadow-lg shadow-black/10 border border-white hover:bg-[#660033] hover:text-white transition-colors"
+            >
+              {cat}
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      <section className="w-full px-6 md:w-[90vw] md:mx-auto py-12 md:py-16">
+        <Reveal className="grid md:grid-cols-[auto_1fr_auto] gap-8 items-center bg-white border border-slate-200 rounded-[2.125rem] p-6 md:p-10">
+          <img
+            src={IMAGES.homeReach1}
+            alt=""
+            className="w-28 h-28 md:w-32 md:h-32 rounded-[1.5rem] object-cover hidden md:block"
+          />
+          <div className="text-center space-y-3">
+            <p className="font-bold text-2xl md:text-3xl text-[#0A0A0A] leading-snug">
+              Have a concern? We are a message away.
+            </p>
+            <p className="text-[#615A5C] font-medium">
+              Reach out now — a real person at Birdie will reply.
+            </p>
+            <div className="flex flex-wrap justify-center gap-4 text-sm font-bold text-[#660033]">
+              <a href={`mailto:${email}`} className="inline-flex items-center gap-2">
+                <Mail size={16} /> {email}
+              </a>
+              {phone && (
+                <a href={`tel:${phone}`} className="inline-flex items-center gap-2">
+                  <Phone size={16} /> {phone}
+                </a>
+              )}
+            </div>
+          </div>
+          <img
+            src={IMAGES.homeReach2}
+            alt=""
+            className="w-28 h-28 md:w-32 md:h-32 rounded-[1.5rem] object-cover hidden md:block"
+          />
+        </Reveal>
+      </section>
+
+      <section className="relative overflow-hidden py-16 md:py-24">
+        <img
+          src={IMAGES.markBurgundy}
+          alt=""
+          className="pointer-events-none absolute -right-16 top-10 w-72 opacity-[0.06]"
+        />
+        <div className="relative w-full px-6 md:w-[90vw] md:mx-auto space-y-12">
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            <Reveal className="relative">
+              <div className="aspect-[4/3] rounded-[2.125rem] overflow-hidden border border-slate-200">
+                <img src={IMAGES.homeWhy} alt="A Lagos home" className="w-full h-full object-cover" />
+              </div>
+              <div className="absolute left-5 bottom-5 right-12 md:right-20 bg-white/95 backdrop-blur-sm rounded-2xl p-5 shadow-lg border border-white">
+                <p className="font-bold text-lg md:text-xl text-[#660033] leading-snug">
+                  Dignity sits at the centre of every connection.
+                </p>
+              </div>
+            </Reveal>
+            <Reveal className="space-y-6">
+              <SectionHeading
+                eyebrow="Why families stay"
+                title="You deserve help that does not fall apart"
+                subtitle="We check the person, agree the work, and hold your money until the job is done. You are not left guessing."
+              />
+              <Link to={hireTo}>
+                <Button size="lg" className="hover-lift">
+                  Get started <ArrowRight size={18} />
                 </Button>
               </Link>
-            </div>
+            </Reveal>
+          </div>
+          <Reveal className="grid md:grid-cols-3 gap-5">
+            {[
+              {
+                title: 'We check IDs, references and skill',
+                body: 'A person at Birdie reads the file before anyone gets a Verified badge.',
+                icon: ShieldCheck,
+              },
+              {
+                title: 'We hold your money until the work is done',
+                body: 'You pay Birdie. The professional is paid when the job is complete.',
+                icon: CheckCircle2,
+              },
+              {
+                title: 'We treat the worker with respect too',
+                body: 'Fair pay, a clear agreement, and someone to call if anything goes wrong.',
+                icon: Heart,
+              },
+            ].map((item) => (
+              <div
+                key={item.title}
+                className="bg-white border border-slate-200 rounded-[1.75rem] p-7 space-y-3 hover-lift"
+              >
+                <item.icon className="text-[#660033]" size={22} />
+                <h3 className="text-lg font-bold text-[#0A0A0A] leading-snug">{item.title}</h3>
+                <p className="text-sm text-[#615A5C] font-medium leading-relaxed">{item.body}</p>
+              </div>
+            ))}
+          </Reveal>
+        </div>
+      </section>
+
+      <section className="bg-white border-y border-slate-100 py-16 md:py-24">
+        <div className="w-full px-6 md:w-[90vw] md:mx-auto space-y-12">
+          <Reveal className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+            <SectionHeading
+              eyebrow="Our people"
+              title="Meet the professionals"
+              subtitle="Checked nannies, drivers, house help and more — ready for Lagos homes."
+            />
+            <Link to="/professionals" className="text-[#660033] font-bold inline-flex items-center gap-1 shrink-0">
+              See all professionals <ChevronRight size={16} />
+            </Link>
+          </Reveal>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            {pros.map((pro) => (
+              <Reveal key={pro.id}>
+                <div className="bg-[#F8FAFB] border border-slate-200 rounded-[1.75rem] overflow-hidden hover-lift h-full flex flex-col">
+                  <div className="aspect-[4/3] overflow-hidden bg-[#F1F5F9]">
+                    <img src={pro.photo} alt="" className="w-full h-full object-cover" />
+                  </div>
+                  <div className="p-5 space-y-3 flex-1 flex flex-col">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-[#660033]">{pro.category}</p>
+                    <h3 className="text-lg font-bold text-[#0A0A0A]">{pro.fullName}</h3>
+                    <p className="text-xs font-bold text-[#615A5C] inline-flex items-center gap-1">
+                      <MapPin size={12} /> {pro.location}
+                    </p>
+                    <div className="mt-auto pt-2">
+                      {pro.live ? (
+                        <Link to={`/professionals/${pro.id}`}>
+                          <Button variant="secondary" size="sm" className="w-full">
+                            See profile
+                          </Button>
+                        </Link>
+                      ) : (
+                        <Link to="/professionals">
+                          <Button variant="secondary" size="sm" className="w-full">
+                            See people
+                          </Button>
+                        </Link>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </Reveal>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* TRUST STRIP */}
-      <Reveal className="w-full px-6 md:w-[90vw] md:mx-auto -mt-12 relative z-20">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
-          {[
-            { label: 'We check everyone', value: 'ID and references', icon: ShieldCheck },
-            { label: 'Your money is safe', value: 'We hold it for you', icon: CheckCircle2 },
-            { label: 'Made for Lagos', value: 'We know this city', icon: Clock },
-          ].map((stat) => (
-            <div
-              key={stat.label}
-              className="bg-white p-7 md:p-8 rounded-[1.75rem] border border-slate-200/80 shadow-lg shadow-slate-200/40 flex items-center justify-between hover-lift"
-            >
-              <div className="space-y-1">
-                <p className="text-xl md:text-2xl font-bold text-[#0A0A0A] tracking-tight">{stat.value}</p>
-                <p className="text-[10px] font-bold text-[#615A5C] uppercase tracking-[0.2em]">{stat.label}</p>
-              </div>
-              <div className="w-12 h-12 bg-[#660033]/5 text-[#660033] rounded-2xl flex items-center justify-center">
-                <stat.icon size={24} />
-              </div>
-            </div>
-          ))}
-        </div>
-      </Reveal>
-
-      {/* CATEGORIES */}
-      <section className="w-full px-6 md:w-[90vw] md:mx-auto py-24 md:py-28 space-y-14">
-        <Reveal>
-          <SectionHeading
-            eyebrow="What we do"
-            title="Pick the kind of help you need"
-            subtitle="These are the jobs Lagos homes ask us for most. Every person here has been checked."
-          />
-        </Reveal>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {CATEGORIES.map((cat) => (
-            <Reveal key={cat}>
-              <Link
-                to={`/professionals?category=${encodeURIComponent(cat)}`}
-                className="group block bg-white rounded-[1.75rem] border border-slate-200 overflow-hidden hover-lift hover:border-[#660033]/25 hover:shadow-xl hover:shadow-[#660033]/5 transition-all"
-              >
-                <div className="aspect-[16/10] overflow-hidden bg-[#F1F5F9]">
-                  <img
-                    src={categoryImage(cat)}
-                    alt={cat}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-                  />
-                </div>
-                <div className="p-7 space-y-3">
-                  <h3 className="text-2xl font-bold text-[#0A0A0A] group-hover:text-[#660033] transition-colors">
-                    {cat}
-                  </h3>
-                  <p className="text-[#615A5C] font-medium text-sm leading-relaxed">
-                    Checked {cat.toLowerCase()}s who are ready to start work in your home.
-                  </p>
-                  <div className="flex items-center gap-1 text-[10px] font-bold text-[#660033] uppercase tracking-widest pt-1">
-                    See the people <ChevronRight size={14} />
-                  </div>
-                </div>
-              </Link>
-            </Reveal>
-          ))}
-        </div>
-      </section>
-
-      {/* HOW IT WORKS — light, no slate-900 */}
-      <section className="bg-white border-y border-slate-100 py-24 md:py-28">
-        <div className="w-full px-6 md:w-[90vw] md:mx-auto grid lg:grid-cols-2 gap-14 items-center">
-          <Reveal className="space-y-10">
+      <section className="w-full px-6 md:w-[90vw] md:mx-auto py-16 md:py-24">
+        <div className="grid lg:grid-cols-2 gap-14 items-center">
+          <Reveal className="space-y-8">
             <SectionHeading
               eyebrow="How it works"
               title="Four simple steps"
               subtitle="Look, talk, pay, and get to work. Birdie stays with you the whole way."
             />
-            <div className="space-y-6">
+            <ol className="space-y-0">
               {[
                 {
                   n: '01',
@@ -183,15 +369,15 @@ export default function HomePage() {
                   d: 'When the job is done and you are happy, we pay the professional. If the work never happens, you get your money back.',
                 },
               ].map((s) => (
-                <div key={s.n} className="flex gap-5 p-5 rounded-2xl border border-slate-100 bg-[#F8FAFB]">
-                  <span className="text-3xl font-bold text-[#E0B5CB] italic shrink-0">{s.n}</span>
+                <li key={s.n} className="flex gap-5 py-5 border-t border-slate-200 first:border-t-0">
+                  <span className="font-bold text-2xl text-[#E0B5CB] shrink-0">{s.n}</span>
                   <div>
                     <h3 className="text-lg font-bold text-[#0A0A0A]">{s.t}</h3>
                     <p className="text-sm text-[#615A5C] font-medium leading-relaxed mt-1">{s.d}</p>
                   </div>
-                </div>
+                </li>
               ))}
-            </div>
+            </ol>
           </Reveal>
           <Reveal>
             <div className="aspect-[4/3] rounded-[2.125rem] overflow-hidden border border-slate-200 shadow-xl shadow-slate-200/50">
@@ -201,8 +387,49 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* PROVIDERS */}
-      <section className="w-full px-6 md:w-[90vw] md:mx-auto py-24 md:py-28 grid grid-cols-1 lg:grid-cols-2 gap-14 items-center">
+      <section className="w-full px-6 md:w-[90vw] md:mx-auto pb-8">
+        <Reveal className="grid lg:grid-cols-2 gap-12 items-center bg-white border border-slate-200 rounded-[2.125rem] p-8 md:p-12">
+          <div className="grid sm:grid-cols-2 gap-4">
+            <img
+              src={HOME_TESTIMONIALS[0].photo}
+              alt=""
+              className="rounded-[1.75rem] object-cover w-full h-64 sm:h-full min-h-[280px]"
+            />
+            <div className="space-y-4">
+              <div className="bg-[#F8FAFB] border border-slate-100 rounded-2xl p-5">
+                <p className="font-bold text-lg text-[#0A0A0A] leading-snug">
+                  “{HOME_TESTIMONIALS[0].quote}”
+                </p>
+                <p className="text-sm font-bold text-[#660033] mt-4">{HOME_TESTIMONIALS[0].name}</p>
+                <p className="text-xs font-bold uppercase tracking-widest text-[#615A5C]">
+                  {HOME_TESTIMONIALS[0].role}
+                </p>
+              </div>
+              <div className="bg-white border border-slate-200 rounded-2xl p-5">
+                <p className="text-[#615A5C] font-medium leading-relaxed text-sm">
+                  “{HOME_TESTIMONIALS[1].quote}”
+                </p>
+                <p className="text-sm font-bold text-[#0A0A0A] mt-3">{HOME_TESTIMONIALS[1].name}</p>
+                <p className="text-xs font-bold uppercase tracking-widest text-[#615A5C]">
+                  {HOME_TESTIMONIALS[1].role}
+                </p>
+              </div>
+            </div>
+          </div>
+          <div className="space-y-6">
+            <SectionHeading
+              eyebrow="Families"
+              title="What it feels like when the system works"
+              subtitle="These quotes are placeholders until we publish real family stories. The layout is ready."
+            />
+            <p className="text-sm font-bold text-[#660033]">
+              {HOME_PROOF.professionals} {HOME_PROOF.professionalsLabel}
+            </p>
+          </div>
+        </Reveal>
+      </section>
+
+      <section className="w-full px-6 md:w-[90vw] md:mx-auto py-16 md:py-24 grid grid-cols-1 lg:grid-cols-2 gap-14 items-center">
         <Reveal>
           <div className="aspect-[4/3] rounded-[2.125rem] overflow-hidden border border-slate-200 bg-[#F1F5F9]">
             <img src={IMAGES.provider} alt="Domestic professional" className="w-full h-full object-cover" />
@@ -229,20 +456,27 @@ export default function HomePage() {
               </div>
             ))}
           </div>
-          <Link to="/register?role=professional">
-            <Button size="lg" className="hover-lift">
-              Sign up for work <ArrowRight size={18} />
-            </Button>
-          </Link>
+          {proOpen ? (
+            <Link to="/register?role=professional">
+              <Button size="lg" className="hover-lift">
+                Sign up for work <ArrowRight size={18} />
+              </Button>
+            </Link>
+          ) : (
+            <Link to="/contact">
+              <Button size="lg" className="hover-lift">
+                Talk to us <ArrowRight size={18} />
+              </Button>
+            </Link>
+          )}
         </Reveal>
       </section>
 
-      {/* STORY TEASER */}
-      <section className="bg-white border-y border-slate-100 py-24">
+      <section className="bg-white border-y border-slate-100 py-16 md:py-24">
         <div className="w-full px-6 md:w-[90vw] md:mx-auto flex flex-col md:flex-row gap-12 md:gap-16 items-center">
           <Reveal className="flex-1 space-y-6">
             <p className="text-[11px] font-bold uppercase tracking-[0.25em] text-[#660033]">Our story</p>
-            <h2 className="text-3xl md:text-4xl font-bold text-[#0A0A0A] italic leading-snug">
+            <h2 className="font-bold text-3xl md:text-4xl text-[#0A0A0A] italic leading-snug">
               “Birdie was born from a lifetime of living in a home that never stopped moving.”
             </h2>
             <p className="text-lg text-[#615A5C] font-medium leading-relaxed">
@@ -261,8 +495,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* INSIGHTS */}
-      <section className="w-full px-6 md:w-[90vw] md:mx-auto py-24 space-y-12">
+      <section className="w-full px-6 md:w-[90vw] md:mx-auto py-16 md:py-24 space-y-10">
         <Reveal className="flex flex-col md:flex-row md:items-end justify-between gap-6">
           <SectionHeading
             eyebrow="Reading"
@@ -273,39 +506,41 @@ export default function HomePage() {
             See all <ChevronRight size={16} />
           </Link>
         </Reveal>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {posts.slice(0, 3).map((post) => (
-            <Reveal key={post.id}>
-              <Link
-                to={`/blog/${post.slug}`}
-                className="block bg-white border border-slate-200 rounded-[1.75rem] overflow-hidden hover-lift hover:border-[#660033]/25 transition-all h-full"
-              >
-                <div className="h-48 bg-[#F1F5F9]">
-                  <img
-                    src={post.imageUrl || IMAGES.blogCover}
-                    alt=""
-                    className="w-full h-full object-cover"
-                  />
-                </div>
-                <div className="p-7 space-y-3">
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-[#660033]">{post.category}</p>
-                  <h3 className="text-xl font-bold text-[#0A0A0A]">{post.title}</h3>
-                  <p className="text-sm text-[#615A5C] line-clamp-3 font-medium">{post.excerpt}</p>
-                </div>
-              </Link>
-            </Reveal>
-          ))}
-        </div>
+        {featured && (
+          <Reveal>
+            <Link
+              to={`/blog/${featured.slug}`}
+              className="group grid lg:grid-cols-2 bg-white border border-slate-200 rounded-[2.125rem] overflow-hidden hover-lift hover:border-[#660033]/25 transition-all"
+            >
+              <div className="aspect-[16/10] lg:aspect-auto lg:min-h-[320px] bg-[#F1F5F9]">
+                <img
+                  src={featured.imageUrl || IMAGES.blogCover}
+                  alt=""
+                  className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-700"
+                />
+              </div>
+              <div className="p-8 md:p-12 space-y-4 flex flex-col justify-center">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-[#660033]">{featured.category}</p>
+                <h3 className="font-bold text-2xl md:text-4xl text-[#0A0A0A] leading-tight">
+                  {featured.title}
+                </h3>
+                <p className="text-[#615A5C] font-medium leading-relaxed">{featured.excerpt}</p>
+                <span className="inline-flex items-center gap-2 font-bold text-[#660033] pt-2">
+                  Read more <ArrowRight size={16} />
+                </span>
+              </div>
+            </Link>
+          </Reveal>
+        )}
       </section>
 
-      {/* FAQ */}
-      <section className="bg-white border-y border-slate-100 py-24">
+      <section className="bg-white border-y border-slate-100 py-16 md:py-24">
         <div className="w-full px-6 md:w-[90vw] md:mx-auto grid lg:grid-cols-2 gap-12">
           <Reveal>
             <SectionHeading
               eyebrow="Questions"
-              title="Questions people ask us"
-              subtitle="Straight answers about how we check people, what you pay, and how we keep your money safe."
+              title="A few things people ask"
+              subtitle="Straight answers about how we check people, and how we keep your money safe."
             />
           </Reveal>
           <Reveal className="space-y-3">
@@ -316,31 +551,40 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* FINAL CTA */}
-      <section className="w-full px-6 md:w-[90vw] md:mx-auto py-20 md:py-24">
-        <Reveal>
-          <div className="bg-[#660033] rounded-[2.5rem] md:rounded-[3.5rem] p-12 md:p-20 text-center space-y-8 text-white relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-72 h-72 bg-white/5 rounded-full -mr-36 -mt-36" />
-            <div className="relative z-10 space-y-8">
-              <h2 className="text-3xl md:text-5xl font-bold tracking-tight">Ready to get help at home?</h2>
-              <p className="text-white/70 text-lg md:text-xl max-w-2xl mx-auto font-medium">
-                Clear prices, people we have checked, and your money held safely until the work is done.
-              </p>
-              <div className="flex flex-col sm:flex-row justify-center gap-4">
-                <Link to="/hire">
-                  <Button size="lg" variant="inverse" className="w-full sm:w-auto">
-                    Find someone to help
-                  </Button>
-                </Link>
-                <Link to="/register?role=professional">
-                  <Button size="lg" variant="outlineOnBrand" className="w-full sm:w-auto">
-                    I am looking for work
-                  </Button>
-                </Link>
-              </div>
+      <section className="relative overflow-hidden bg-[#660033] text-white">
+        <img
+          src={IMAGES.markLight}
+          alt=""
+          className="pointer-events-none absolute -right-8 -bottom-10 w-80 md:w-[28rem] opacity-[0.12]"
+        />
+        <div className="relative w-full px-6 md:w-[90vw] md:mx-auto py-16 md:py-24 grid lg:grid-cols-2 gap-12 items-center">
+          <Reveal className="space-y-6">
+            <p className="text-[11px] font-bold uppercase tracking-[0.25em] text-white/60">Ready when you are</p>
+            <h2 className="font-bold text-3xl md:text-5xl tracking-tight leading-tight">
+              Ready to get help at home?
+            </h2>
+            <p className="text-white/80 text-lg font-medium leading-relaxed max-w-xl">
+              Clear prices, people we have checked, and your money held safely until the work is done.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4">
+              <Link to={hireTo}>
+                <Button size="lg" variant="inverse" className="w-full sm:w-auto">
+                  Find someone to help
+                </Button>
+              </Link>
+              <Link to="/contact">
+                <Button size="lg" variant="outlineOnBrand" className="w-full sm:w-auto">
+                  Talk to us
+                </Button>
+              </Link>
             </div>
-          </div>
-        </Reveal>
+          </Reveal>
+          <Reveal>
+            <div className="aspect-[4/3] rounded-[2.125rem] overflow-hidden border border-white/15">
+              <img src={IMAGES.homeHero} alt="" className="w-full h-full object-cover" />
+            </div>
+          </Reveal>
+        </div>
       </section>
     </div>
   );

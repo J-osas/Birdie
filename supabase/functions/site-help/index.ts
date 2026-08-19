@@ -42,7 +42,7 @@ function providerConfig(provider: AiProvider) {
     envName: 'GROQ_API_KEY',
     secretName: 'GROQ_API_KEY',
     baseUrl: 'https://api.groq.com/openai/v1',
-    chatModel: 'llama-3.3-70b-versatile',
+    chatModel: 'openai/gpt-oss-20b',
     whisperModel: 'whisper-large-v3',
   };
 }

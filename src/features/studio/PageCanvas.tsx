@@ -107,7 +107,7 @@ function HeroBlock({
         className="pointer-events-none absolute -right-8 bottom-8 w-56 md:w-80 opacity-[0.12]"
       />
       <div className="relative z-10 w-full px-6 md:w-[90vw] md:mx-auto py-16 md:py-24">
-        <div className="max-w-xl space-y-7">
+        <div className="max-w-xl space-y-7 pt-[2em] md:pt-[4em] lg:pt-[4em]">
           {block.eyebrow && (
             <p className="text-[11px] font-bold uppercase tracking-[0.25em] text-[#E0B5CB]">{block.eyebrow}</p>
           )}

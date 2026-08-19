@@ -23,6 +23,7 @@ export default function PublicHeader() {
   const hiresOpen = settings?.hires_enabled !== false;
   const hireTo = hiresOpen ? '/hire' : '/professionals';
   const signedIn = status === 'authenticated' && user;
+  const onHome = location.pathname === '/';
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 8);
@@ -52,19 +53,31 @@ export default function PublicHeader() {
   return (
     <header
       className={cn(
-        'sticky top-0 z-50 transition-all duration-300',
-        scrolled
-          ? 'bg-white/95 backdrop-blur-xl border-b border-slate-100 shadow-sm shadow-slate-200/40'
-          : 'bg-white/80 backdrop-blur-md border-b border-transparent'
+        'z-50 transition-all duration-300',
+        onHome ? 'fixed top-0 left-0 right-0 bg-transparent border-transparent' : 'sticky top-0',
+        !onHome &&
+          (scrolled
+            ? 'bg-white/95 backdrop-blur-xl border-b border-slate-100 shadow-sm shadow-slate-200/40'
+            : 'bg-white/80 backdrop-blur-md border-b border-transparent')
       )}
     >
       <div className="w-full px-6 md:w-[90vw] md:mx-auto flex items-center justify-between h-[72px]">
-        <Link to="/" className="group shrink-0 relative z-50" onClick={() => setOpen(false)}>
+        <Link
+          to="/"
+          className={cn(
+            'group shrink-0 relative z-50 rounded-2xl px-3 py-1.5 transition-transform',
+            onHome && 'bg-white'
+          )}
+          onClick={() => setOpen(false)}
+        >
           <BrandLogo className="group-hover:-translate-y-0.5 transition-transform" />
         </Link>
 
         <nav
-          className="hidden lg:flex items-center gap-1 p-1 rounded-full bg-[#F8FAFB] border border-slate-200/80"
+          className={cn(
+            'hidden lg:flex items-center gap-1 p-1 rounded-full border',
+            onHome ? 'bg-white border-white' : 'bg-[#F8FAFB] border-slate-200/80'
+          )}
           aria-label="Primary"
         >
           {NAV.map((item) => (
@@ -75,8 +88,12 @@ export default function PublicHeader() {
                 cn(
                   'px-4 py-2 rounded-full text-sm font-semibold tracking-tight transition-all',
                   isActive
-                    ? 'bg-white text-[#660033] shadow-sm'
-                    : 'text-[#615A5C] hover:text-[#660033] hover:bg-white/70'
+                    ? onHome
+                      ? 'bg-[#E0B5CB] text-[#660033]'
+                      : 'bg-white text-[#660033] shadow-sm'
+                    : onHome
+                      ? 'text-[#660033] hover:bg-[#E0B5CB]/50'
+                      : 'text-[#615A5C] hover:text-[#660033] hover:bg-white/70'
                 )
               }
             >
@@ -88,23 +105,50 @@ export default function PublicHeader() {
         <div className="flex items-center gap-2 sm:gap-3">
           {signedIn ? (
             <Link to="/app" className="hidden sm:block">
-              <Button size="sm">Dashboard</Button>
+              <Button
+                size="sm"
+                className={
+                  onHome
+                    ? 'bg-white !text-[#660033] hover:!bg-[#660033] hover:!text-white shadow-none'
+                    : undefined
+                }
+              >
+                Dashboard
+              </Button>
             </Link>
           ) : (
             <>
               <Link to="/login" className="hidden sm:block">
-                <Button variant="ghost" size="sm">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className={onHome ? 'text-white hover:text-[#E0B5CB]' : undefined}
+                >
                   Sign in
                 </Button>
               </Link>
               <Link to={hireTo} className="hidden sm:block">
-                <Button size="sm">{hiresOpen ? 'Find help' : 'See people'}</Button>
+                <Button
+                  size="sm"
+                  className={
+                    onHome
+                      ? 'bg-white !text-[#660033] hover:!bg-[#660033] hover:!text-white shadow-none'
+                      : undefined
+                  }
+                >
+                  {hiresOpen ? 'Find help' : 'See people'}
+                </Button>
               </Link>
             </>
           )}
           <button
             type="button"
-            className="lg:hidden w-11 h-11 rounded-full border border-slate-200 flex items-center justify-center text-[#0A0A0A] hover:border-[#660033]/30 hover:text-[#660033] transition-colors"
+            className={cn(
+              'lg:hidden w-11 h-11 rounded-full flex items-center justify-center transition-colors',
+              onHome
+                ? 'bg-white text-[#660033] border border-white'
+                : 'border border-slate-200 text-[#0A0A0A] hover:border-[#660033]/30 hover:text-[#660033]'
+            )}
             onClick={() => setOpen((v) => !v)}
             aria-label={open ? 'Close menu' : 'Open menu'}
             aria-expanded={open}
@@ -127,12 +171,16 @@ export default function PublicHeader() {
             className="pointer-events-none absolute -right-10 bottom-10 w-64 opacity-[0.12]"
           />
           <div className="relative flex items-center justify-between px-6 h-[72px] shrink-0">
-            <Link to="/" onClick={() => setOpen(false)}>
-              <BrandLogo variant="dark" />
+            <Link
+              to="/"
+              onClick={() => setOpen(false)}
+              className="rounded-2xl bg-white px-3 py-1.5"
+            >
+              <BrandLogo />
             </Link>
             <button
               type="button"
-              className="w-11 h-11 rounded-full border border-white/20 flex items-center justify-center text-white hover:bg-white/10"
+              className="w-11 h-11 rounded-full bg-white text-[#660033] flex items-center justify-center"
               onClick={() => setOpen(false)}
               aria-label="Close menu"
             >
@@ -158,31 +206,32 @@ export default function PublicHeader() {
             ))}
           </nav>
 
-          <div className="relative px-6 pb-10 pt-4 space-y-3 shrink-0">
+          <div className="relative px-6 pb-10 pt-4 flex flex-col gap-5 shrink-0">
             {signedIn ? (
-              <Link to="/app" onClick={() => setOpen(false)}>
+              <Link to="/app" onClick={() => setOpen(false)} className="block w-full">
                 <Button size="lg" variant="inverse" className="w-full whitespace-nowrap">
                   Dashboard <ArrowRight size={18} />
                 </Button>
               </Link>
             ) : (
               <>
-                <Link to={hireTo} onClick={() => setOpen(false)}>
+                <Link to={hireTo} onClick={() => setOpen(false)} className="block w-full">
                   <Button size="lg" variant="inverse" className="w-full whitespace-nowrap">
                     {hiresOpen ? 'Find someone to help' : 'See people'} <ArrowRight size={18} />
                   </Button>
                 </Link>
-                <Link to="/register?role=professional" onClick={() => setOpen(false)}>
+                <Link to="/register?role=professional" onClick={() => setOpen(false)} className="block w-full">
                   <Button size="lg" variant="outlineOnBrand" className="w-full whitespace-nowrap">
                     I am looking for work
                   </Button>
                 </Link>
-                <Link
-                  to="/login"
-                  onClick={() => setOpen(false)}
-                  className="block text-center text-sm font-bold text-[#E0B5CB] pt-1"
-                >
-                  Sign in
+                <Link to="/login" onClick={() => setOpen(false)} className="block w-full">
+                  <Button
+                    size="lg"
+                    className="w-full whitespace-nowrap bg-[#E0B5CB] text-[#660033] hover:bg-white shadow-none"
+                  >
+                    Sign in
+                  </Button>
                 </Link>
               </>
             )}

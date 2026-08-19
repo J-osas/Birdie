@@ -9,6 +9,7 @@
   --color-ink: #0a0a0a;
   --color-muted: #615a5c;
   --font-sans: 'Plus Jakarta Sans', system-ui, sans-serif;
+  --font-hand: 'Caveat', cursive;
 }
 
 html,
@@ -99,4 +100,8 @@ body {
 
 .hover-lift:hover {
   transform: translateY(-3px);
+}
+
+.font-hand {
+  font-family: var(--font-hand);
 }

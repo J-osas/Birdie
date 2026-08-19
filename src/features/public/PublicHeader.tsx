@@ -4,7 +4,7 @@ import { ArrowRight, Menu, X } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
 import { useAuth } from '@/app/AuthProvider';
 import { BrandLogo } from './BrandLogo';
-import { IMAGES } from '@/data/images';
+import { useImages } from '@/app/SiteMediaProvider';
 import { cn } from '@/lib/utils';
 
 const NAV = [
@@ -17,6 +17,7 @@ const NAV = [
 
 export default function PublicHeader() {
   const { user, status, settings } = useAuth();
+  const images = useImages();
   const location = useLocation();
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
@@ -166,7 +167,7 @@ export default function PublicHeader() {
           aria-label="Menu"
         >
           <img
-            src={IMAGES.markLight}
+            src={images.markLight}
             alt=""
             className="pointer-events-none absolute -right-10 bottom-10 w-64 opacity-[0.12]"
           />

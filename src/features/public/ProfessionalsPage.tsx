@@ -4,16 +4,18 @@ import { MapPin, Star, Search } from 'lucide-react';
 import { dataService } from '@/services/dataService';
 import { Availability, ProfessionalProfile, ProfessionalStatus } from '@/types';
 import { CATEGORIES, statusLabel } from '@/data/constants';
-import { IMAGES, categoryImage } from '@/data/images';
+import { categoryImage } from '@/data/images';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Input, Select } from '@/components/ui/Input';
 import { SectionHeading } from './sections/SectionHeading';
 import { useAuth } from '@/app/AuthProvider';
+import { useImages } from '@/app/SiteMediaProvider';
 
 export default function ProfessionalsPage() {
   const [params, setParams] = useSearchParams();
   const { settings } = useAuth();
+  const images = useImages();
   const [pros, setPros] = useState<ProfessionalProfile[]>([]);
   const [q, setQ] = useState('');
   const category = params.get('category') || '';
@@ -87,7 +89,7 @@ export default function ProfessionalsPage() {
             >
               <div className="h-48 bg-[#F1F5F9] relative">
                 <img
-                  src={pro.avatarUrl || categoryImage(pro.category) || IMAGES.avatarFallback}
+                  src={pro.avatarUrl || categoryImage(pro.category, images) || images.avatarFallback}
                   alt=""
                   className="w-full h-full object-cover"
                 />

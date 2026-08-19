@@ -25,3 +25,13 @@ export function splitName(fullName: string) {
     lastName: parts.slice(1).join(' ') || '',
   };
 }
+
+export function errorMessage(err: unknown, fallback: string) {
+  if (err instanceof Error && err.message) return err.message;
+  if (err && typeof err === 'object' && 'message' in err) {
+    const message = String((err as { message?: unknown }).message || '').trim();
+    if (message) return message;
+  }
+  if (typeof err === 'string' && err.trim()) return err.trim();
+  return fallback;
+}

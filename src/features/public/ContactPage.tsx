@@ -5,10 +5,11 @@ import { PAYMENT_FAQS } from '@/data/paymentCopy';
 import { Button } from '@/components/ui/Button';
 import { Input, Label, TextArea, Select } from '@/components/ui/Input';
 import { useAuth } from '@/app/AuthProvider';
-import { IMAGES } from '@/data/images';
+import { useImages } from '@/app/SiteMediaProvider';
 import { FaqItem } from './sections/FaqItem';
 import { SectionHeading } from './sections/SectionHeading';
 import { Reveal } from './sections/Reveal';
+import { StudioRoute } from '@/features/studio/StudioRoute';
 
 const FAQS = [
   {
@@ -30,7 +31,12 @@ function whatsappHref(value: string) {
 }
 
 export default function ContactPage() {
+  return <StudioRoute slug="contact" fallback={<CodedContact />} />;
+}
+
+function CodedContact() {
   const { settings } = useAuth();
+  const images = useImages();
   const [sent, setSent] = useState(false);
   const fee = settings?.consultation_fee_ngn ?? 10000;
   const email = settings?.support_email || 'support@birdie.ng';
@@ -76,10 +82,10 @@ export default function ContactPage() {
             </div>
             <div className="relative">
               <div className="aspect-[4/3] rounded-[2.125rem] overflow-hidden border border-slate-200">
-                <img src={IMAGES.contact} alt="Contact Birdie" className="w-full h-full object-cover" />
+                <img src={images.contact} alt="Contact Birdie" className="w-full h-full object-cover" />
               </div>
               <img
-                src={IMAGES.markBurgundy}
+                src={images.markBurgundy}
                 alt=""
                 className="absolute -bottom-4 -left-3 w-16 opacity-80 pointer-events-none"
               />
@@ -151,7 +157,7 @@ export default function ContactPage() {
 
       <section className="relative overflow-hidden bg-[#660033] text-white">
         <img
-          src={IMAGES.markLight}
+          src={images.markLight}
           alt=""
           className="pointer-events-none absolute -right-8 -bottom-10 w-80 md:w-[28rem] opacity-[0.12]"
         />

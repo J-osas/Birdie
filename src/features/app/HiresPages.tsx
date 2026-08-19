@@ -14,7 +14,7 @@ import {
   UserRole,
 } from '@/types';
 import { getStatusStyle, statusLabel } from '@/data/constants';
-import { formatNaira } from '@/lib/utils';
+import { formatNaira, errorMessage } from '@/lib/utils';
 import { IMAGES } from '@/data/images';
 import { Button } from '@/components/ui/Button';
 import { Input, Label, TextArea } from '@/components/ui/Input';
@@ -695,7 +695,7 @@ export function HireDetailPage() {
                   });
                   await reload();
                 } catch (e) {
-                  setActionError(e instanceof Error ? e.message : 'Could not mark the meeting as done');
+                  setActionError(errorMessage(e, 'Could not mark the meeting as done'));
                 } finally {
                   setBillBusy(false);
                 }
@@ -766,7 +766,7 @@ export function HireDetailPage() {
                     });
                     await reload();
                   } catch (e) {
-                    setActionError(e instanceof Error ? e.message : 'Could not save the bill');
+                    setActionError(errorMessage(e, 'Could not save the bill'));
                   } finally {
                     setBillBusy(false);
                   }
@@ -796,7 +796,7 @@ export function HireDetailPage() {
                     });
                     await reload();
                   } catch (e) {
-                    setActionError(e instanceof Error ? e.message : 'Could not send the bill');
+                    setActionError(errorMessage(e, 'Could not send the bill'));
                   } finally {
                     setBillBusy(false);
                   }
@@ -844,7 +844,7 @@ export function HireDetailPage() {
                   if (!res?.authorization_url) throw new Error('We could not open the payment page. Please try again.');
                   window.location.href = res.authorization_url;
                 } catch (e) {
-                  setActionError(e instanceof Error ? e.message : 'We could not open the payment page. Please try again.');
+                  setActionError(errorMessage(e, 'We could not open the payment page. Please try again.'));
                 }
               }}
             >
@@ -864,7 +864,7 @@ export function HireDetailPage() {
                   if (!res?.authorization_url) throw new Error('We could not open the payment page. Please try again.');
                   window.location.href = res.authorization_url;
                 } catch (e) {
-                  setActionError(e instanceof Error ? e.message : 'We could not open the payment page. Please try again.');
+                  setActionError(errorMessage(e, 'We could not open the payment page. Please try again.'));
                 }
               }}
             >
@@ -879,7 +879,7 @@ export function HireDetailPage() {
                   await dataService.updateHireStatus(hire.id, RequestStatus.ACTIVE);
                   reload();
                 } catch (e) {
-                  setActionError(e instanceof Error ? e.message : 'We could not start the job');
+                  setActionError(errorMessage(e, 'We could not start the job'));
                 }
               }}
             >
@@ -894,7 +894,7 @@ export function HireDetailPage() {
                   await dataService.updateHireStatus(hire.id, RequestStatus.COMPLETED);
                   reload();
                 } catch (e) {
-                  setActionError(e instanceof Error ? e.message : 'We could not mark the job as done');
+                  setActionError(errorMessage(e, 'We could not mark the job as done'));
                 }
               }}
             >
@@ -909,7 +909,7 @@ export function HireDetailPage() {
                   await dataService.updateHireStatus(hire.id, RequestStatus.SETTLED);
                   reload();
                 } catch (e) {
-                  setActionError(e instanceof Error ? e.message : 'We could not pay the professional');
+                  setActionError(errorMessage(e, 'We could not pay the professional'));
                 }
               }}
             >
@@ -937,7 +937,7 @@ export function HireDetailPage() {
                     await dataService.refundPayment({ hireRequestId: hire.id, paymentType: type });
                     reload();
                   } catch (e) {
-                    setActionError(e instanceof Error ? e.message : 'We could not send the money back');
+                    setActionError(errorMessage(e, 'We could not send the money back'));
                   }
                 }}
               >
@@ -1020,7 +1020,7 @@ export function HireDetailPage() {
                   comment,
                 });
               } catch (e) {
-                setReviewError(e instanceof Error ? e.message : 'Could not send your review');
+                setReviewError(errorMessage(e, 'Could not send your review'));
               } finally {
                 setReviewSaving(false);
               }

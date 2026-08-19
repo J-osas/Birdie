@@ -12,10 +12,11 @@ import {
   Users,
 } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
-import { IMAGES } from '@/data/images';
+import { useImages } from '@/app/SiteMediaProvider';
 import { useAuth } from '@/app/AuthProvider';
 import { useInView } from '@/lib/motion';
 import { cn } from '@/lib/utils';
+import { StudioRoute } from '@/features/studio/StudioRoute';
 
 const CHAPTERS = [
   { id: 'home', label: 'The home', num: '01' },
@@ -81,7 +82,12 @@ function jumpTo(id: string) {
 }
 
 export default function OurStoryPage() {
+  return <StudioRoute slug="story" fallback={<CodedStory />} />;
+}
+
+function CodedStory() {
   const { settings } = useAuth();
+  const images = useImages();
   const progress = useReadingProgress();
   const active = useActiveChapter(CHAPTERS.map((c) => c.id));
   const [lens, setLens] = useState<'together' | 'family' | 'worker'>('together');
@@ -103,7 +109,7 @@ export default function OurStoryPage() {
       <section className="relative min-h-[88vh] flex items-end overflow-hidden bg-[#2B0116]">
         <div
           className="absolute inset-0 bg-cover bg-center scale-105"
-          style={{ backgroundImage: `url('${IMAGES.story}')` }}
+          style={{ backgroundImage: `url('${images.story}')` }}
         />
         <div className="absolute inset-0 bg-gradient-to-t from-[#2B0116] via-[#2B0116]/75 to-[#2B0116]/25" />
         <div className="relative z-10 w-full px-6 md:w-[90vw] md:mx-auto pb-16 md:pb-24 pt-32 space-y-8">

@@ -243,7 +243,7 @@ export default function AdminDashboard() {
                 </div>
                 <div className="flex justify-between gap-3">
                   <span className="text-slate-500 font-medium">Commission</span>
-                  <span className="font-bold">{settings?.commission_rate ?? 15}%</span>
+                  <span className="font-bold">{settings?.commission_rate ?? 3.5}%</span>
                 </div>
                 <div className="flex justify-between gap-3">
                   <span className="text-slate-500 font-medium">Days we hold money after a job</span>

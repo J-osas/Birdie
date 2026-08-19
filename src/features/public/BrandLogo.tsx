@@ -1,4 +1,4 @@
-import { IMAGES } from '@/data/images';
+import { useImages } from '@/app/SiteMediaProvider';
 import { cn } from '@/lib/utils';
 
 export function BrandLogo({
@@ -10,25 +10,15 @@ export function BrandLogo({
   className?: string;
   markClassName?: string;
 }) {
+  const images = useImages();
   const dark = variant === 'dark';
   return (
-    <span className={cn('inline-flex items-center gap-2', className)}>
+    <span className={cn('inline-flex items-center', className)}>
       <img
-        src={dark ? IMAGES.markLight : IMAGES.markBurgundy}
-        alt=""
-        className={cn('h-9 w-auto object-contain', markClassName)}
+        src={dark ? images.logoOnDark : images.logoOnLight}
+        alt="Birdie"
+        className={cn('h-9 w-auto max-w-[180px] object-contain object-left', markClassName)}
       />
-      <span
-        className={cn(
-          'text-xl font-bold tracking-tight leading-none',
-          dark ? 'text-white' : 'text-[#0A0A0A]'
-        )}
-      >
-        birdie
-        <span className={cn('text-[11px] align-baseline', dark ? 'text-[#E0B5CB]' : 'text-[#660033]')}>
-          .ng
-        </span>
-      </span>
     </span>
   );
 }

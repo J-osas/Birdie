@@ -30,6 +30,8 @@ import {
   CommunicationLog,
   AdminOverviewMetrics,
   OverviewRangeDays,
+  MediaFile,
+  MediaSlot,
 } from '@/types';
 import { DEFAULT_CONSULTATION_FEE } from '@/data/constants';
 
@@ -165,7 +167,7 @@ const DEFAULT_PLATFORM_SETTINGS: PlatformSettings = {
   platform_name: 'Birdie',
   support_email: 'support@birdie.ng',
   default_currency: 'NGN',
-  commission_rate: 15,
+  commission_rate: 3.5,
   consultation_fee_ngn: DEFAULT_CONSULTATION_FEE,
   min_withdrawal_amount: 5000,
   escrow_release_days: 3,
@@ -194,6 +196,8 @@ const DEFAULT_PLATFORM_SETTINGS: PlatformSettings = {
   support_phone: null,
   support_whatsapp: null,
   office_address: null,
+  page_studio_enabled: false,
+  openai_secret_last4: null,
   updated_at: new Date().toISOString(),
 };
 
@@ -203,7 +207,7 @@ function mapPlatformSettings(data: Record<string, unknown>): PlatformSettings {
     ...data,
     consultation_fee_ngn: Number(data.consultation_fee_ngn ?? DEFAULT_CONSULTATION_FEE),
     min_withdrawal_amount: Number(data.min_withdrawal_amount ?? 5000),
-    commission_rate: Number(data.commission_rate ?? 15),
+    commission_rate: Number(data.commission_rate ?? 3.5),
     escrow_release_days: Number(data.escrow_release_days ?? 3),
     invoice_due_days: Number(data.invoice_due_days ?? 3),
     ga_measurement_id: (data.ga_measurement_id as string) || null,
@@ -214,6 +218,8 @@ function mapPlatformSettings(data: Record<string, unknown>): PlatformSettings {
     email_notifications_enabled: data.email_notifications_enabled !== false,
     reg_client_enabled: data.reg_client_enabled !== false,
     reg_pro_enabled: data.reg_pro_enabled !== false,
+    page_studio_enabled: data.page_studio_enabled === true,
+    openai_secret_last4: (data.openai_secret_last4 as string) || null,
   };
 }
 
@@ -237,6 +243,7 @@ export const dataService = {
       'paystack_public_key_live',
       'paystack_secret_last4_test',
       'paystack_secret_last4_live',
+      'openai_secret_last4',
     ];
     const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
     for (const [key, value] of Object.entries(updates)) {
@@ -1848,6 +1855,210 @@ export const dataService = {
       createdAt: row.created_at,
     }));
   },
+
+  async getMediaSlotUrls(): Promise<Record<string, string>> {
+    const { data, error } = await supabase
+      .from('media_slots')
+      .select('slot, fallback_url, updated_at, media_files ( public_url )');
+    if (error || !data) return {};
+    const urls: Record<string, string> = {};
+    for (const row of data as Array<Record<string, unknown>>) {
+      const file = row.media_files as { public_url?: string } | { public_url?: string }[] | null;
+      const fileUrl = Array.isArray(file) ? file[0]?.public_url : file?.public_url;
+      urls[String(row.slot)] = mediaSlotUrl(
+        String(row.fallback_url || ''),
+        fileUrl,
+        row.updated_at as string | undefined
+      );
+    }
+    return urls;
+  },
+
+  async listMediaSlots(): Promise<MediaSlot[]> {
+    const { data, error } = await supabase
+      .from('media_slots')
+      .select('slot, label, group_name, fallback_url, media_id, updated_at, media_files (*)')
+      .order('group_name')
+      .order('label');
+    if (error || !data) return [];
+    return (data as Array<Record<string, unknown>>).map((row) => {
+      const raw = row.media_files as Record<string, unknown> | Record<string, unknown>[] | null;
+      const fileRow = Array.isArray(raw) ? raw[0] : raw;
+      const file = fileRow ? mapMediaFile(fileRow) : null;
+      return {
+        slot: String(row.slot),
+        label: String(row.label || ''),
+        groupName: String(row.group_name || 'pages'),
+        fallbackUrl: String(row.fallback_url || ''),
+        mediaId: (row.media_id as string) || null,
+        publicUrl: mediaSlotUrl(String(row.fallback_url || ''), file?.publicUrl, row.updated_at as string | undefined),
+        updatedAt: String(row.updated_at || ''),
+        file,
+      };
+    });
+  },
+
+  async listMediaFiles(): Promise<MediaFile[]> {
+    const { data, error } = await supabase
+      .from('media_files')
+      .select('*')
+      .order('created_at', { ascending: false });
+    if (error || !data) return [];
+    return data.map((row) => mapMediaFile(row as Record<string, unknown>));
+  },
+
+  async uploadSiteMedia(file: File, slot?: string) {
+    if (!file.type.startsWith('image/')) {
+      throw new Error('Please choose a picture.');
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      throw new Error('That picture is too large. Keep it under 10 MB.');
+    }
+
+    const { data: authData } = await supabase.auth.getUser();
+    const userId = authData.user?.id || null;
+    const safe = file.name.replace(/[^a-zA-Z0-9._-]/g, '-').slice(0, 80) || 'image.png';
+    const path = slot
+      ? `slots/${slot}/${Date.now()}-${safe}`
+      : `library/${crypto.randomUUID()}-${safe}`;
+
+    const { error: upErr } = await supabase.storage.from('site-media').upload(path, file, {
+      upsert: false,
+      contentType: file.type,
+    });
+    if (upErr) throw upErr;
+
+    const { data: pub } = supabase.storage.from('site-media').getPublicUrl(path);
+    const { data: row, error: insErr } = await supabase
+      .from('media_files')
+      .insert({
+        filename: file.name,
+        storage_path: path,
+        public_url: pub.publicUrl,
+        mime_type: file.type,
+        byte_size: file.size,
+        created_by: userId,
+      })
+      .select()
+      .single();
+    if (insErr || !row) throw insErr || new Error('Could not save that picture.');
+
+    if (slot) {
+      const { error } = await supabase
+        .from('media_slots')
+        .update({
+          media_id: row.id,
+          updated_at: new Date().toISOString(),
+          updated_by: userId,
+        })
+        .eq('slot', slot);
+      if (error) throw error;
+    }
+
+    return mapMediaFile(row as Record<string, unknown>);
+  },
+
+  async assignMediaToSlot(slot: string, mediaId: string) {
+    const { data: authData } = await supabase.auth.getUser();
+    const { error } = await supabase
+      .from('media_slots')
+      .update({
+        media_id: mediaId,
+        updated_at: new Date().toISOString(),
+        updated_by: authData.user?.id || null,
+      })
+      .eq('slot', slot);
+    if (error) throw error;
+  },
+
+  async deleteMediaFile(id: string) {
+    const { data, error } = await supabase.from('media_files').select('storage_path').eq('id', id).maybeSingle();
+    if (error) throw error;
+    if (data?.storage_path) {
+      await supabase.storage.from('site-media').remove([data.storage_path]);
+    }
+    const { error: delErr } = await supabase.from('media_files').delete().eq('id', id);
+    if (delErr) throw delErr;
+  },
+
+  async getPublishedLayout(slug: string) {
+    const { data, error } = await supabase.rpc('get_published_layout', { p_slug: slug });
+    if (error) return null;
+    return data ?? null;
+  },
+
+  async getPageLayoutRow(slug: string) {
+    const { data, error } = await supabase
+      .from('page_layouts')
+      .select('slug, draft, published, updated_at, updated_by')
+      .eq('slug', slug)
+      .maybeSingle();
+    if (error) throw error;
+    return data;
+  },
+
+  async listPageLayouts() {
+    const { data, error } = await supabase
+      .from('page_layouts')
+      .select('slug, updated_at, published')
+      .order('slug');
+    if (error || !data) return [];
+    return data.map((row) => ({
+      slug: String(row.slug),
+      updatedAt: String(row.updated_at || ''),
+      hasPublished: Boolean(row.published),
+    }));
+  },
+
+  async savePageDraft(slug: string, draft: unknown, userId?: string) {
+    const existing = await this.getPageLayoutRow(slug);
+    if (existing) {
+      const { error } = await supabase
+        .from('page_layouts')
+        .update({
+          draft,
+          updated_at: new Date().toISOString(),
+          updated_by: userId || null,
+        })
+        .eq('slug', slug);
+      if (error) throw error;
+      return;
+    }
+    const { error } = await supabase.from('page_layouts').insert({
+      slug,
+      draft,
+      published: null,
+      updated_at: new Date().toISOString(),
+      updated_by: userId || null,
+    });
+    if (error) throw error;
+  },
+
+  async publishPageLayout(slug: string, draft: unknown, userId?: string) {
+    const { error } = await supabase
+      .from('page_layouts')
+      .update({
+        draft,
+        published: draft,
+        updated_at: new Date().toISOString(),
+        updated_by: userId || null,
+      })
+      .eq('slug', slug);
+    if (error) throw error;
+  },
+
+  async resetPageLayout(slug: string, draft: unknown, userId?: string) {
+    const { error } = await supabase
+      .from('page_layouts')
+      .update({
+        draft,
+        published: null,
+        updated_at: new Date().toISOString(),
+        updated_by: userId || null,
+      })
+      .eq('slug', slug);
+    if (error) throw error;
+  },
 };
 
 const FALLBACK_BLOG: BlogPost[] = [
@@ -1891,3 +2102,22 @@ const FALLBACK_BLOG: BlogPost[] = [
     date: 'Mar 2026',
   },
 ];
+
+function mapMediaFile(row: Record<string, unknown>): MediaFile {
+  return {
+    id: String(row.id),
+    filename: String(row.filename || ''),
+    storagePath: String(row.storage_path || ''),
+    publicUrl: String(row.public_url || ''),
+    mimeType: (row.mime_type as string) || undefined,
+    byteSize: typeof row.byte_size === 'number' ? row.byte_size : undefined,
+    alt: (row.alt as string) || undefined,
+    createdAt: String(row.created_at || ''),
+  };
+}
+
+function mediaSlotUrl(fallbackUrl: string, fileUrl?: string | null, updatedAt?: string) {
+  if (!fileUrl) return fallbackUrl;
+  const stamp = updatedAt ? Date.parse(updatedAt) : Date.now();
+  return `${fileUrl}${fileUrl.includes('?') ? '&' : '?'}v=${stamp}`;
+}

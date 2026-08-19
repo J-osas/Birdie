@@ -11,6 +11,7 @@ export function SwitchesSection({
   staffOnly,
   bannerOn,
   bannerText,
+  pageStudio,
   setRegClient,
   setRegPro,
   setEmails,
@@ -20,6 +21,7 @@ export function SwitchesSection({
   setStaffOnly,
   setBannerOn,
   setBannerText,
+  setPageStudio,
   onSave,
   saving,
   saved,
@@ -34,6 +36,7 @@ export function SwitchesSection({
   staffOnly: boolean;
   bannerOn: boolean;
   bannerText: string;
+  pageStudio: boolean;
   setRegClient: (v: boolean) => void;
   setRegPro: (v: boolean) => void;
   setEmails: (v: boolean) => void;
@@ -43,6 +46,7 @@ export function SwitchesSection({
   setStaffOnly: (v: boolean) => void;
   setBannerOn: (v: boolean) => void;
   setBannerText: (v: string) => void;
+  setPageStudio: (v: boolean) => void;
   onSave: () => Promise<void>;
   saving: boolean;
   saved: boolean;
@@ -111,6 +115,12 @@ export function SwitchesSection({
           />
         </div>
       )}
+      <ToggleRow
+        label="Page studio"
+        hint="Lets staff rearrange public pages and talk to the page AI. Off = the coded site, unchanged."
+        checked={pageStudio}
+        onChange={setPageStudio}
+      />
       <ToggleRow
         label="Staff-only lock"
         hint="Families and professionals who sign in see a closed screen. Public pages still load. Use this only if you must shut the app."

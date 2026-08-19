@@ -30,3 +30,9 @@ verify_jwt = true
 
 [functions.paystack-settings]
 verify_jwt = true
+
+[functions.studio-settings]
+verify_jwt = true
+
+[functions.page-studio]
+verify_jwt = true

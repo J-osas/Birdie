@@ -1,13 +1,19 @@
 import { Link } from 'react-router-dom';
 import { ShieldCheck, Award, Heart, Scale, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/Button';
-import { IMAGES } from '@/data/images';
+import { useImages } from '@/app/SiteMediaProvider';
+import { useAuth } from '@/app/AuthProvider';
 import { SectionHeading } from './sections/SectionHeading';
 import { Reveal } from './sections/Reveal';
-import { useAuth } from '@/app/AuthProvider';
+import { StudioRoute } from '@/features/studio/StudioRoute';
 
 export default function AboutPage() {
+  return <StudioRoute slug="about" fallback={<CodedAbout />} />;
+}
+
+function CodedAbout() {
   const { settings } = useAuth();
+  const images = useImages();
   const hiresOpen = settings?.hires_enabled !== false;
   const proOpen = settings?.reg_pro_enabled !== false;
   const hireTo = hiresOpen ? '/hire' : '/professionals';
@@ -28,10 +34,10 @@ export default function AboutPage() {
           </div>
           <div className="relative">
             <div className="aspect-[4/3] rounded-[2.125rem] overflow-hidden border border-slate-200 shadow-xl shadow-slate-200/50">
-              <img src={IMAGES.homeWhy} alt="About Birdie" className="w-full h-full object-cover" />
+              <img src={images.homeWhy} alt="About Birdie" className="w-full h-full object-cover" />
             </div>
             <img
-              src={IMAGES.markBurgundy}
+              src={images.markBurgundy}
               alt=""
               className="absolute -bottom-4 -left-3 w-16 md:w-20 opacity-80 pointer-events-none"
             />
@@ -63,7 +69,7 @@ export default function AboutPage() {
         </Reveal>
         <Reveal className="relative overflow-hidden bg-[#660033] p-10 rounded-[2.125rem] text-white space-y-4 hover-lift">
           <img
-            src={IMAGES.markLight}
+            src={images.markLight}
             alt=""
             className="pointer-events-none absolute -right-8 -bottom-8 w-40 opacity-[0.12]"
           />
@@ -76,7 +82,7 @@ export default function AboutPage() {
 
       <section className="relative overflow-hidden py-16 md:py-24">
         <img
-          src={IMAGES.markBurgundy}
+          src={images.markBurgundy}
           alt=""
           className="pointer-events-none absolute -right-16 top-10 w-72 opacity-[0.06]"
         />
@@ -135,7 +141,7 @@ export default function AboutPage() {
           </Reveal>
           <Reveal>
             <div className="w-full md:w-96 h-80 rounded-[2.125rem] overflow-hidden border border-slate-100">
-              <img src={IMAGES.story} alt="Birdie story" className="w-full h-full object-cover" />
+              <img src={images.story} alt="Birdie story" className="w-full h-full object-cover" />
             </div>
           </Reveal>
         </div>
@@ -143,7 +149,7 @@ export default function AboutPage() {
 
       <section className="relative overflow-hidden bg-[#660033] text-white">
         <img
-          src={IMAGES.markLight}
+          src={images.markLight}
           alt=""
           className="pointer-events-none absolute -right-8 -bottom-10 w-80 md:w-[28rem] opacity-[0.12]"
         />

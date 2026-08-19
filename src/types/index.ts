@@ -158,6 +158,8 @@ export interface PlatformSettings {
   support_phone?: string | null;
   support_whatsapp?: string | null;
   office_address?: string | null;
+  page_studio_enabled: boolean;
+  openai_secret_last4?: string | null;
   updated_at: string;
 }
 
@@ -488,4 +490,26 @@ export interface AssessmentAttempt {
   answers: Record<string, string>;
   autoScore: number;
   submittedAt: string;
+}
+
+export interface MediaFile {
+  id: string;
+  filename: string;
+  storagePath: string;
+  publicUrl: string;
+  mimeType?: string;
+  byteSize?: number;
+  alt?: string;
+  createdAt: string;
+}
+
+export interface MediaSlot {
+  slot: string;
+  label: string;
+  groupName: string;
+  fallbackUrl: string;
+  mediaId: string | null;
+  publicUrl: string;
+  updatedAt: string;
+  file?: MediaFile | null;
 }

@@ -1,7 +1,19 @@
-import { Link, Outlet } from 'react-router-dom';
+import { useEffect } from 'react';
+import { Link, Outlet, useLocation } from 'react-router-dom';
 import PublicHeader from './PublicHeader';
+import { StudioEditBar } from '@/features/studio/StudioEditBar';
+import { useStudio } from '@/features/studio/StudioProvider';
 import { useAuth } from '@/app/AuthProvider';
-import { IMAGES } from '@/data/images';
+import { useImages } from '@/app/SiteMediaProvider';
+
+function marketingSlug(path: string): string | null {
+  if (path === '/') return 'home';
+  if (path === '/about') return 'about';
+  if (path === '/story') return 'story';
+  if (path === '/contact') return 'contact';
+  const extra = path.match(/^\/p\/([a-z0-9-]+)$/);
+  return extra ? extra[1] : null;
+}
 
 function whatsappHref(value: string) {
   const trimmed = value.trim();
@@ -12,6 +24,9 @@ function whatsappHref(value: string) {
 
 export default function PublicLayout() {
   const { settings } = useAuth();
+  const location = useLocation();
+  const studio = useStudio();
+  const images = useImages();
   const name = settings?.platform_name || 'Birdie';
   const email = settings?.support_email || 'support@birdie.ng';
   const phone = settings?.support_phone;
@@ -21,6 +36,12 @@ export default function PublicLayout() {
   const hiresOpen = settings?.hires_enabled !== false;
   const proOpen = settings?.reg_pro_enabled !== false;
 
+  useEffect(() => {
+    const slug = marketingSlug(location.pathname);
+    if (slug) void studio.attach(slug);
+    else studio.detach();
+  }, [location.pathname, studio.attach, studio.detach]);
+
   return (
     <div className="min-h-screen bg-[#F8FAFB] flex flex-col">
       {banner && (
@@ -29,6 +50,7 @@ export default function PublicLayout() {
         </div>
       )}
       <PublicHeader />
+      <StudioEditBar />
       <main className="flex-1">
         <Outlet />
       </main>
@@ -38,7 +60,7 @@ export default function PublicLayout() {
             <div className="md:col-span-2 space-y-5">
               <Link to="/" className="inline-flex items-center rounded-2xl bg-[#660033] px-5 py-4">
                 <img
-                  src={IMAGES.logoOnDark}
+                  src={images.logoOnDark}
                   alt="Birdie"
                   className="h-10 w-auto max-w-[200px] object-contain object-left"
                 />

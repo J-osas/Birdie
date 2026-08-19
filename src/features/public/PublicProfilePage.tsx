@@ -14,9 +14,10 @@ import {
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { statusLabel } from '@/data/constants';
-import { IMAGES, categoryImage } from '@/data/images';
+import { categoryImage } from '@/data/images';
 import { formatNaira } from '@/lib/utils';
 import { useAuth } from '@/app/AuthProvider';
+import { useImages } from '@/app/SiteMediaProvider';
 import { ReviewForm } from '@/features/reviews/ReviewForm';
 import { Select } from '@/components/ui/Input';
 import {
@@ -31,6 +32,7 @@ export default function PublicProfilePage() {
   const { id } = useParams();
   const [params] = useSearchParams();
   const { user, status, settings } = useAuth();
+  const images = useImages();
   const [profile, setProfile] = useState<ProfessionalProfile | null>(null);
   const [certs, setCerts] = useState<ProfessionalCertification[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
@@ -107,7 +109,7 @@ export default function PublicProfilePage() {
       <section className="grid lg:grid-cols-[minmax(280px,420px)_1fr] gap-0 bg-white border border-slate-200 rounded-[2rem] overflow-hidden shadow-xl shadow-slate-200/30">
         <div className="bg-[#F1F5F9] min-h-[320px] lg:min-h-full">
           <img
-            src={profile.avatarUrl || categoryImage(profile.category) || IMAGES.avatarFallback}
+            src={profile.avatarUrl || categoryImage(profile.category, images) || images.avatarFallback}
             alt=""
             className="w-full h-full object-cover min-h-[320px]"
           />

@@ -3,13 +3,14 @@ import { Link, useParams } from 'react-router-dom';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
 import { dataService } from '@/services/dataService';
 import { BlogPost } from '@/types';
-import { IMAGES } from '@/data/images';
+import { useImages } from '@/app/SiteMediaProvider';
 import { SectionHeading } from './sections/SectionHeading';
 import { Reveal } from './sections/Reveal';
 import { Button } from '@/components/ui/Button';
 import { useAuth } from '@/app/AuthProvider';
 
 export function BlogArchive() {
+  const images = useImages();
   const [posts, setPosts] = useState<BlogPost[]>([]);
   useEffect(() => {
     dataService.getBlogPosts().then(setPosts);
@@ -42,7 +43,7 @@ export function BlogArchive() {
             >
               <div className="aspect-[16/10] lg:aspect-auto lg:min-h-[320px] bg-[#F1F5F9]">
                 <img
-                  src={featured.imageUrl || IMAGES.blogCover}
+                  src={featured.imageUrl || images.blogCover}
                   alt=""
                   className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-700"
                 />
@@ -66,7 +67,7 @@ export function BlogArchive() {
       {rest.length > 0 && (
         <section className="relative overflow-hidden py-8 md:py-12 pb-20">
           <img
-            src={IMAGES.markBurgundy}
+            src={images.markBurgundy}
             alt=""
             className="pointer-events-none absolute -right-16 top-10 w-72 opacity-[0.06]"
           />
@@ -79,7 +80,7 @@ export function BlogArchive() {
                 >
                   <div className="h-48 bg-[#F1F5F9]">
                     <img
-                      src={post.imageUrl || IMAGES.blogCover}
+                      src={post.imageUrl || images.blogCover}
                       alt=""
                       className="w-full h-full object-cover"
                     />
@@ -105,6 +106,7 @@ export function BlogArchive() {
 export function BlogSingle() {
   const { slug } = useParams();
   const { settings } = useAuth();
+  const images = useImages();
   const [post, setPost] = useState<BlogPost | null>(null);
   const [related, setRelated] = useState<BlogPost[]>([]);
   const hiresOpen = settings?.hires_enabled !== false;
@@ -146,9 +148,9 @@ export function BlogSingle() {
           </p>
         </div>
         <div className="relative aspect-[21/9] rounded-[2.125rem] overflow-hidden bg-[#F1F5F9] border border-slate-200">
-          <img src={post.imageUrl || IMAGES.blogCover} alt="" className="w-full h-full object-cover" />
+          <img src={post.imageUrl || images.blogCover} alt="" className="w-full h-full object-cover" />
           <img
-            src={IMAGES.markBurgundy}
+            src={images.markBurgundy}
             alt=""
             className="absolute bottom-4 left-4 w-12 opacity-80 pointer-events-none"
           />
@@ -169,7 +171,7 @@ export function BlogSingle() {
                 className="block bg-white border border-slate-200 rounded-[1.75rem] overflow-hidden hover-lift hover:border-[#660033]/25 transition-all"
               >
                 <div className="h-40 bg-[#F1F5F9]">
-                  <img src={item.imageUrl || IMAGES.blogCover} alt="" className="w-full h-full object-cover" />
+                  <img src={item.imageUrl || images.blogCover} alt="" className="w-full h-full object-cover" />
                 </div>
                 <div className="p-6 space-y-2">
                   <p className="text-[10px] font-bold uppercase tracking-widest text-[#660033]">{item.category}</p>
@@ -183,7 +185,7 @@ export function BlogSingle() {
 
       <section className="relative overflow-hidden bg-[#660033] text-white mt-8">
         <img
-          src={IMAGES.markLight}
+          src={images.markLight}
           alt=""
           className="pointer-events-none absolute -right-8 -bottom-10 w-80 md:w-[28rem] opacity-[0.12]"
         />

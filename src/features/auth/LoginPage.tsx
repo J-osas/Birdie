@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { Input, Label } from '@/components/ui/Input';
 import { useAuth } from '@/app/AuthProvider';
 import { safeNextPath } from '@/lib/utils';
+import { BrandLogo } from '@/features/public/BrandLogo';
 
 export default function LoginPage() {
   const navigate = useNavigate();
@@ -40,11 +41,8 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center p-6 bg-[#F8FAFB]">
       <div className="w-full max-w-md space-y-8">
         <div className="text-center">
-          <Link
-            to="/"
-            className="inline-flex w-16 h-16 bg-[#660033] rounded-2xl items-center justify-center text-white text-3xl font-bold mb-6"
-          >
-            B
+          <Link to="/" className="inline-flex justify-center mb-6">
+            <BrandLogo markClassName="h-12" />
           </Link>
           <h1 className="text-4xl font-bold text-slate-900">Welcome back</h1>
           <p className="text-slate-500 font-medium mt-2">Sign in to Birdie</p>

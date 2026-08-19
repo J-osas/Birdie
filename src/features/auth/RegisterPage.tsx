@@ -5,6 +5,7 @@ import { authService } from '@/services/authService';
 import { UserRole } from '@/types';
 import { Button } from '@/components/ui/Button';
 import { Input, Label } from '@/components/ui/Input';
+import { BrandLogo } from '@/features/public/BrandLogo';
 import { useAuth } from '@/app/AuthProvider';
 
 export default function RegisterPage() {
@@ -75,11 +76,8 @@ export default function RegisterPage() {
     <div className="min-h-screen flex items-center justify-center p-6 bg-[#F8FAFB]">
       <div className="w-full max-w-md space-y-8">
         <div className="text-center">
-          <Link
-            to="/"
-            className="inline-flex w-16 h-16 bg-[#660033] rounded-2xl items-center justify-center text-white text-3xl font-bold mb-6"
-          >
-            B
+          <Link to="/" className="inline-flex justify-center mb-6">
+            <BrandLogo markClassName="h-12" />
           </Link>
           <h1 className="text-4xl font-bold">Join Birdie</h1>
           <p className="text-slate-500 font-medium mt-2">Client or professional — admin access is invite-only.</p>

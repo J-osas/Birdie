@@ -22,11 +22,13 @@ import {
   BarChart3,
   Shield,
   UserCircle,
+  Images,
+  Sparkles,
   type LucideIcon,
 } from 'lucide-react';
 import { useAuth } from '@/app/AuthProvider';
 import { UserRole } from '@/types';
-import { IMAGES } from '@/data/images';
+import { useImages } from '@/app/SiteMediaProvider';
 import { BrandLogo } from '@/features/public/BrandLogo';
 import StaffNotificationsBell from '@/features/app/StaffNotificationsBell';
 import { getTheme, resolveTheme, type AppTheme } from '@/lib/theme';
@@ -40,6 +42,7 @@ type NavItem = {
 
 export default function AppShell() {
   const { status, user, proProfile, blockedReason, signOut, settings } = useAuth();
+  const images = useImages();
   const location = useLocation();
   const [moreOpen, setMoreOpen] = useState(false);
   const [avatarMenuOpen, setAvatarMenuOpen] = useState(false);
@@ -170,6 +173,8 @@ export default function AppShell() {
         { to: '/app/payments', icon: Wallet, label: 'Money' },
         { to: '/app/admin/reviews', icon: Star, label: 'Reviews' },
         { to: '/app/cms', icon: FileText, label: 'Website text' },
+        { to: '/app/gallery', icon: Images, label: 'Gallery' },
+        { to: '/app/studio', icon: Sparkles, label: 'Studio' },
         { to: '/app/communications', icon: Megaphone, label: 'Emails' },
         { to: '/app/analytics', icon: BarChart3, label: 'Analytics' },
         { to: '/app/settings', icon: Settings, label: 'Settings' },
@@ -214,10 +219,12 @@ export default function AppShell() {
         links[2], // Clients
         links[5], // Reviews
         links[6], // CMS
-        links[7], // Communications
-        links[8], // Analytics
-        links[9], // Settings
-        links[10], // Security
+        links[7], // Gallery
+        links[8], // Studio
+        links[9], // Communications
+        links[10], // Analytics
+        links[11], // Settings
+        links[12], // Security
       ]
     : isPro
       ? [
@@ -233,7 +240,7 @@ export default function AppShell() {
   );
 
   const displayName = user.name || user.firstName || 'User';
-  const avatarSrc = user.avatarUrl || proProfile?.avatarUrl || IMAGES.avatarFallback;
+  const avatarSrc = user.avatarUrl || proProfile?.avatarUrl || images.avatarFallback;
   const showProfileFooter = isClient || isPro || isStaff;
   const editProfileTo = isPro ? '/app/profile' : isClient ? '/app/account' : '/app/settings';
   const settingsTo = isClient ? '/app/account' : isStaff ? '/app/settings' : '/app/settings';

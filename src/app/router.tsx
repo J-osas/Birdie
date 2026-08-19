@@ -1,5 +1,7 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { AuthProvider, useAuth } from './AuthProvider';
+import { SiteMediaProvider } from './SiteMediaProvider';
+import { StudioProvider } from '@/features/studio/StudioProvider';
 import PublicLayout from '@/features/public/PublicLayout';
 import HomePage from '@/features/public/HomePage';
 import AboutPage from '@/features/public/AboutPage';
@@ -36,6 +38,9 @@ import AdminPaymentsPage from '@/features/admin/AdminPaymentsPage';
 import AdminReviewsPage from '@/features/admin/AdminReviewsPage';
 import AdminAnalyticsPage from '@/features/admin/AdminAnalyticsPage';
 import AdminSecurityPage from '@/features/admin/AdminSecurityPage';
+import AdminGalleryPage from '@/features/admin/AdminGalleryPage';
+import AdminStudioPage from '@/features/admin/AdminStudioPage';
+import ExtraMarketingPage from '@/features/public/ExtraMarketingPage';
 
 function SettingsOrAccount() {
   const { user } = useAuth();
@@ -63,12 +68,15 @@ export default function AppRouter() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <Routes>
+        <SiteMediaProvider>
+          <StudioProvider>
+          <Routes>
           <Route element={<PublicLayout />}>
             <Route index element={<HomePage />} />
             <Route path="about" element={<AboutPage />} />
             <Route path="story" element={<OurStoryPage />} />
             <Route path="contact" element={<ContactPage />} />
+            <Route path="p/:slug" element={<ExtraMarketingPage />} />
             <Route path="blog" element={<BlogArchive />} />
             <Route path="blog/:slug" element={<BlogSingle />} />
             <Route path="professionals" element={<ProfessionalsPage />} />
@@ -105,6 +113,8 @@ export default function AppRouter() {
             <Route path="vetting" element={<Navigate to="/app/professionals" replace />} />
             <Route path="clients" element={<AdminClientsPage />} />
             <Route path="cms" element={<CmsPage />} />
+            <Route path="gallery" element={<AdminGalleryPage />} />
+            <Route path="studio" element={<AdminStudioPage />} />
             <Route path="communications" element={<CommunicationsPage />} />
             <Route path="analytics" element={<AdminAnalyticsPage />} />
             <Route path="security" element={<AdminSecurityPage />} />
@@ -112,7 +122,9 @@ export default function AppRouter() {
           </Route>
 
           <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
+          </Routes>
+          </StudioProvider>
+        </SiteMediaProvider>
       </AuthProvider>
     </BrowserRouter>
   );

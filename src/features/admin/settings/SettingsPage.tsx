@@ -5,6 +5,7 @@ import { dataService } from '@/services/dataService';
 import { UserRole } from '@/types';
 import { MoneySection } from './MoneySection';
 import { PaystackSection } from './PaystackSection';
+import { OpenAiSection } from './OpenAiSection';
 import { SwitchesSection } from './SwitchesSection';
 import { ContactSection } from './ContactSection';
 import { ScreenSection } from './ScreenSection';
@@ -12,6 +13,7 @@ import { ScreenSection } from './ScreenSection';
 const NAV = [
   { href: '#money', label: 'Money' },
   { href: '#payments', label: 'Card payments' },
+  { href: '#openai', label: 'Page AI' },
   { href: '#switches', label: 'Switches' },
   { href: '#contact', label: 'Contact' },
   { href: '#screen', label: 'Your screen' },
@@ -36,6 +38,7 @@ export default function SettingsPage() {
   const [staffOnly, setStaffOnly] = useState(false);
   const [bannerOn, setBannerOn] = useState(false);
   const [bannerText, setBannerText] = useState('');
+  const [pageStudio, setPageStudio] = useState(false);
   const [platformName, setPlatformName] = useState('Birdie');
   const [supportEmail, setSupportEmail] = useState('');
   const [supportPhone, setSupportPhone] = useState('');
@@ -56,7 +59,7 @@ export default function SettingsPage() {
   useEffect(() => {
     if (!settings) return;
     setFee(String(settings.consultation_fee_ngn ?? 10000));
-    setCommission(String(settings.commission_rate ?? 15));
+    setCommission(String(settings.commission_rate ?? 3.5));
     setHoldDays(String(settings.escrow_release_days ?? 3));
     setMinWithdrawal(String(settings.min_withdrawal_amount ?? 5000));
     setInvoiceDueDays(String(settings.invoice_due_days ?? 3));
@@ -69,6 +72,7 @@ export default function SettingsPage() {
     setStaffOnly(Boolean(settings.admin_only_access));
     setBannerOn(Boolean(settings.public_banner_enabled));
     setBannerText(settings.public_banner_text || '');
+    setPageStudio(settings.page_studio_enabled === true);
     setPlatformName(settings.platform_name || 'Birdie');
     setSupportEmail(settings.support_email || '');
     setSupportPhone(settings.support_phone || '');
@@ -172,6 +176,7 @@ export default function SettingsPage() {
               : Boolean(settings?.paystack_secret_last4_test)
           }
         />
+        <OpenAiSection isAdmin={Boolean(isAdmin)} last4={settings?.openai_secret_last4} />
         <SwitchesSection
           regClient={regClient}
           regPro={regPro}
@@ -182,6 +187,7 @@ export default function SettingsPage() {
           staffOnly={staffOnly}
           bannerOn={bannerOn}
           bannerText={bannerText}
+          pageStudio={pageStudio}
           setRegClient={setRegClient}
           setRegPro={setRegPro}
           setEmails={setEmails}
@@ -191,6 +197,7 @@ export default function SettingsPage() {
           setStaffOnly={setStaffOnly}
           setBannerOn={setBannerOn}
           setBannerText={setBannerText}
+          setPageStudio={setPageStudio}
           saving={switchSaving}
           saved={switchSaved}
           error={switchError}
@@ -206,6 +213,7 @@ export default function SettingsPage() {
                 admin_only_access: staffOnly,
                 public_banner_enabled: bannerOn,
                 public_banner_text: bannerText.trim() || null,
+                page_studio_enabled: pageStudio,
               },
               'switches',
               setSwitchSaving,

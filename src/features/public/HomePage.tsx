@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 import { PAYMENT_FAQS } from '@/data/paymentCopy';
 import { CATEGORIES } from '@/data/constants';
-import { IMAGES, categoryImage } from '@/data/images';
+import { categoryImage } from '@/data/images';
 import { HOME_PLACEHOLDER_PROS, HOME_PROOF, HOME_TESTIMONIALS } from '@/data/homePlaceholders';
 import { Button } from '@/components/ui/Button';
 import { dataService } from '@/services/dataService';
@@ -24,6 +24,8 @@ import { SectionHeading } from './sections/SectionHeading';
 import { FaqItem } from './sections/FaqItem';
 import { Reveal } from './sections/Reveal';
 import { useAuth } from '@/app/AuthProvider';
+import { useImages } from '@/app/SiteMediaProvider';
+import { StudioRoute } from '@/features/studio/StudioRoute';
 
 const FAQS = [
   {
@@ -46,19 +48,24 @@ type HomePro = {
   live: boolean;
 };
 
-function toHomePro(p: ProfessionalProfile): HomePro {
+function toHomePro(p: ProfessionalProfile, fallback: string, images: ReturnType<typeof useImages>): HomePro {
   return {
     id: p.id,
     fullName: p.fullName || 'A Birdie professional',
     category: p.category,
     location: p.location || 'Lagos',
-    photo: p.avatarUrl || categoryImage(p.category) || IMAGES.avatarFallback,
+    photo: p.avatarUrl || categoryImage(p.category, images) || fallback,
     live: true,
   };
 }
 
 export default function HomePage() {
+  return <StudioRoute slug="home" fallback={<CodedHome />} />;
+}
+
+function CodedHome() {
   const { settings } = useAuth();
+  const images = useImages();
   const [posts, setPosts] = useState<BlogPost[]>([]);
   const [pros, setPros] = useState<HomePro[]>([]);
   const hiresOpen = settings?.hires_enabled !== false;
@@ -76,7 +83,7 @@ export default function HomePage() {
         const verified = list.filter(
           (p) => p.status === ProfessionalStatus.VERIFIED || p.status === ProfessionalStatus.APPROVED
         );
-        const pick = (verified.length ? verified : list).slice(0, 4).map(toHomePro);
+        const pick = (verified.length ? verified : list).slice(0, 4).map((p) => toHomePro(p, images.avatarFallback, images));
         const filled = [...pick];
         let i = 0;
         while (filled.length < 4 && i < HOME_PLACEHOLDER_PROS.length) {
@@ -86,7 +93,7 @@ export default function HomePage() {
             fullName: ph.fullName,
             category: ph.category,
             location: ph.location,
-            photo: ph.photo,
+            photo: images[ph.photoKey],
             live: false,
           });
           i += 1;
@@ -100,30 +107,30 @@ export default function HomePage() {
             fullName: ph.fullName,
             category: ph.category,
             location: ph.location,
-            photo: ph.photo,
+            photo: images[ph.photoKey],
             live: false,
           }))
         );
       });
-  }, []);
+  }, [images]);
 
   const avatars = useMemo(
-    () => [IMAGES.homeReach1, IMAGES.homeReach2, IMAGES.homeTestimonial],
-    []
+    () => [images.homeReach1, images.homeReach2, images.homeTestimonial],
+    [images.homeReach1, images.homeReach2, images.homeTestimonial]
   );
 
   return (
     <div>
       <section className="relative min-h-[88vh] flex items-end overflow-hidden">
         <img
-          src={IMAGES.homeHero}
+          src={images.homeHero}
           alt="A Lagos family at home"
           className="absolute inset-0 w-full h-full object-cover object-center"
         />
         <div className="absolute inset-0 bg-gradient-to-r from-[#2B0116]/92 via-[#660033]/75 to-[#660033]/15" />
         <div className="absolute inset-0 bg-gradient-to-t from-[#2B0116]/50 via-transparent to-[#2B0116]/20" />
         <img
-          src={IMAGES.markLight}
+          src={images.markLight}
           alt=""
           className="pointer-events-none absolute -right-8 bottom-8 w-56 md:w-80 opacity-[0.12]"
         />
@@ -198,7 +205,7 @@ export default function HomePage() {
       <section className="w-full px-6 md:w-[90vw] md:mx-auto py-12 md:py-16">
         <Reveal className="grid md:grid-cols-[auto_1fr_auto] gap-8 items-center bg-white border border-slate-200 rounded-[2.125rem] p-6 md:p-10">
           <img
-            src={IMAGES.homeReach1}
+            src={images.homeReach1}
             alt=""
             className="w-28 h-28 md:w-32 md:h-32 rounded-[1.5rem] object-cover hidden md:block"
           />
@@ -221,7 +228,7 @@ export default function HomePage() {
             </div>
           </div>
           <img
-            src={IMAGES.homeReach2}
+            src={images.homeReach2}
             alt=""
             className="w-28 h-28 md:w-32 md:h-32 rounded-[1.5rem] object-cover hidden md:block"
           />
@@ -230,7 +237,7 @@ export default function HomePage() {
 
       <section className="relative overflow-hidden py-16 md:py-24">
         <img
-          src={IMAGES.markBurgundy}
+          src={images.markBurgundy}
           alt=""
           className="pointer-events-none absolute -right-16 top-10 w-72 opacity-[0.06]"
         />
@@ -238,7 +245,7 @@ export default function HomePage() {
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <Reveal className="relative">
               <div className="aspect-[4/3] rounded-[2.125rem] overflow-hidden border border-slate-200">
-                <img src={IMAGES.homeWhy} alt="A Lagos home" className="w-full h-full object-cover" />
+                <img src={images.homeWhy} alt="A Lagos home" className="w-full h-full object-cover" />
               </div>
               <div className="absolute left-5 bottom-5 right-12 md:right-20 bg-white/95 backdrop-blur-sm rounded-2xl p-5 shadow-lg border border-white">
                 <p className="font-bold text-lg md:text-xl text-[#660033] leading-snug">
@@ -381,7 +388,7 @@ export default function HomePage() {
           </Reveal>
           <Reveal>
             <div className="aspect-[4/3] rounded-[2.125rem] overflow-hidden border border-slate-200 shadow-xl shadow-slate-200/50">
-              <img src={IMAGES.process} alt="Birdie hiring process" className="w-full h-full object-cover" />
+              <img src={images.process} alt="Birdie hiring process" className="w-full h-full object-cover" />
             </div>
           </Reveal>
         </div>
@@ -391,7 +398,7 @@ export default function HomePage() {
         <Reveal className="grid lg:grid-cols-2 gap-12 items-center bg-white border border-slate-200 rounded-[2.125rem] p-8 md:p-12">
           <div className="grid sm:grid-cols-2 gap-4">
             <img
-              src={HOME_TESTIMONIALS[0].photo}
+              src={images[HOME_TESTIMONIALS[0].photoKey]}
               alt=""
               className="rounded-[1.75rem] object-cover w-full h-64 sm:h-full min-h-[280px]"
             />
@@ -432,7 +439,7 @@ export default function HomePage() {
       <section className="w-full px-6 md:w-[90vw] md:mx-auto py-16 md:py-24 grid grid-cols-1 lg:grid-cols-2 gap-14 items-center">
         <Reveal>
           <div className="aspect-[4/3] rounded-[2.125rem] overflow-hidden border border-slate-200 bg-[#F1F5F9]">
-            <img src={IMAGES.provider} alt="Domestic professional" className="w-full h-full object-cover" />
+            <img src={images.provider} alt="Domestic professional" className="w-full h-full object-cover" />
           </div>
         </Reveal>
         <Reveal className="space-y-8">
@@ -489,7 +496,7 @@ export default function HomePage() {
           </Reveal>
           <Reveal>
             <div className="w-full md:w-96 h-80 rounded-[2.125rem] overflow-hidden border border-slate-100">
-              <img src={IMAGES.story} alt="Birdie story" className="w-full h-full object-cover" />
+              <img src={images.story} alt="Birdie story" className="w-full h-full object-cover" />
             </div>
           </Reveal>
         </div>
@@ -514,7 +521,7 @@ export default function HomePage() {
             >
               <div className="aspect-[16/10] lg:aspect-auto lg:min-h-[320px] bg-[#F1F5F9]">
                 <img
-                  src={featured.imageUrl || IMAGES.blogCover}
+                  src={featured.imageUrl || images.blogCover}
                   alt=""
                   className="w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-700"
                 />
@@ -553,7 +560,7 @@ export default function HomePage() {
 
       <section className="relative overflow-hidden bg-[#660033] text-white">
         <img
-          src={IMAGES.markLight}
+          src={images.markLight}
           alt=""
           className="pointer-events-none absolute -right-8 -bottom-10 w-80 md:w-[28rem] opacity-[0.12]"
         />
@@ -581,7 +588,7 @@ export default function HomePage() {
           </Reveal>
           <Reveal>
             <div className="aspect-[4/3] rounded-[2.125rem] overflow-hidden border border-white/15">
-              <img src={IMAGES.homeHero} alt="" className="w-full h-full object-cover" />
+              <img src={images.homeHero} alt="" className="w-full h-full object-cover" />
             </div>
           </Reveal>
         </div>

@@ -4,15 +4,17 @@ import { MapPin, Star, Search, ShieldCheck, Wallet, MessageCircle } from 'lucide
 import { dataService } from '@/services/dataService';
 import { Availability, HireRequest, ProfessionalProfile, ProfessionalStatus, UserRole } from '@/types';
 import { CATEGORIES } from '@/data/constants';
-import { IMAGES, categoryImage } from '@/data/images';
+import { categoryImage } from '@/data/images';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Input, Select } from '@/components/ui/Input';
 import { formatNaira } from '@/lib/utils';
 import { useAuth } from '@/app/AuthProvider';
+import { useImages } from '@/app/SiteMediaProvider';
 
 export default function FindPage() {
   const { user, settings } = useAuth();
+  const images = useImages();
   const [params, setParams] = useSearchParams();
   const [pros, setPros] = useState<ProfessionalProfile[]>([]);
   const [waiting, setWaiting] = useState<HireRequest[]>([]);
@@ -165,7 +167,7 @@ export default function FindPage() {
                 >
                   <div className="h-44 bg-[#F1F5F9] relative">
                     <img
-                      src={pro.avatarUrl || categoryImage(pro.category) || IMAGES.avatarFallback}
+                      src={pro.avatarUrl || categoryImage(pro.category, images) || images.avatarFallback}
                       alt=""
                       className="w-full h-full object-cover"
                     />
@@ -245,7 +247,7 @@ export default function FindPage() {
 
         <aside className="hidden lg:block space-y-5 sticky top-6">
           <div className="rounded-[1.75rem] overflow-hidden h-44 border border-slate-200">
-            <img src={IMAGES.provider} alt="" className="w-full h-full object-cover" />
+            <img src={images.provider} alt="" className="w-full h-full object-cover" />
           </div>
           <div className="bg-white border border-slate-200 rounded-[1.75rem] p-6 space-y-4">
             <h2 className="font-bold text-[#0A0A0A]">How it works</h2>

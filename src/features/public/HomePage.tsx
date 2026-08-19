@@ -121,7 +121,7 @@ function CodedHome() {
 
   return (
     <div>
-      <section className="relative min-h-[88vh] flex items-end overflow-hidden">
+      <section className="relative min-h-[88vh] flex items-start lg:items-end overflow-hidden">
         <img
           src={images.homeHero}
           alt="A Lagos family at home"
@@ -135,8 +135,8 @@ function CodedHome() {
           className="pointer-events-none absolute -right-8 bottom-8 w-56 md:w-80 opacity-[0.12]"
         />
 
-        <div className="relative z-10 w-full px-6 md:w-[90vw] md:mx-auto py-16 md:py-24">
-          <div className="max-w-xl space-y-7 pt-[2em] md:pt-[4em] lg:pt-[4em]">
+        <div className="relative z-10 w-full px-6 md:w-[90vw] md:mx-auto pt-[calc(var(--public-chrome-h,72px)+3rem)] pb-16 lg:py-24">
+          <div className="max-w-xl space-y-7">
             <p className="text-[11px] font-bold uppercase tracking-[0.25em] text-[#E0B5CB]">Lagos home help</p>
             <h1 className="font-bold text-4xl sm:text-5xl lg:text-[3.5rem] text-white tracking-tight leading-[1.08]">
               Good help you can trust, for your home in Lagos.

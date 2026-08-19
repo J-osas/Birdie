@@ -97,7 +97,7 @@ function HeroBlock({
   const hero = resolveStudioImage(block.imageSlot, images);
   const avatars = [images.homeReach1, images.homeReach2, images.homeTestimonial];
   return (
-    <section className="relative min-h-[88vh] flex items-end overflow-hidden">
+    <section className="relative min-h-[88vh] flex items-start lg:items-end overflow-hidden">
       <img src={hero} alt="" className="absolute inset-0 w-full h-full object-cover object-center" />
       <div className="absolute inset-0 bg-gradient-to-r from-[#2B0116]/92 via-[#660033]/75 to-[#660033]/15" />
       <div className="absolute inset-0 bg-gradient-to-t from-[#2B0116]/50 via-transparent to-[#2B0116]/20" />
@@ -106,8 +106,8 @@ function HeroBlock({
         alt=""
         className="pointer-events-none absolute -right-8 bottom-8 w-56 md:w-80 opacity-[0.12]"
       />
-      <div className="relative z-10 w-full px-6 md:w-[90vw] md:mx-auto py-16 md:py-24">
-        <div className="max-w-xl space-y-7 pt-[2em] md:pt-[4em] lg:pt-[4em]">
+      <div className="relative z-10 w-full px-6 md:w-[90vw] md:mx-auto pt-[calc(var(--public-chrome-h,72px)+3rem)] pb-16 lg:py-24">
+        <div className="max-w-xl space-y-7">
           {block.eyebrow && (
             <p className="text-[11px] font-bold uppercase tracking-[0.25em] text-[#E0B5CB]">{block.eyebrow}</p>
           )}

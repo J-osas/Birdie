@@ -159,6 +159,7 @@ export interface PlatformSettings {
   support_whatsapp?: string | null;
   office_address?: string | null;
   page_studio_enabled: boolean;
+  help_assistant_enabled: boolean;
   openai_secret_last4?: string | null;
   updated_at: string;
 }

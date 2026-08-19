@@ -55,7 +55,7 @@ export default function PublicHeader() {
     <header
       className={cn(
         'z-50 transition-all duration-300',
-        onHome ? 'fixed top-0 left-0 right-0 bg-transparent border-transparent' : 'sticky top-0',
+        onHome ? 'bg-transparent border-transparent' : 'sticky top-0',
         !onHome &&
           (scrolled
             ? 'bg-white/95 backdrop-blur-xl border-b border-slate-100 shadow-sm shadow-slate-200/40'

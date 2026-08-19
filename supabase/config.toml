@@ -36,3 +36,6 @@ verify_jwt = true
 
 [functions.page-studio]
 verify_jwt = true
+
+[functions.site-help]
+verify_jwt = false

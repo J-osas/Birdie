@@ -3,6 +3,7 @@ import { GripVertical, Plus, EyeOff, Eye, ChevronUp, ChevronDown, Trash2 } from 
 import { Button } from '@/components/ui/Button';
 import { useAuth } from '@/app/AuthProvider';
 import { UserRole } from '@/types';
+import { cn } from '@/lib/utils';
 import { useStudio } from './StudioProvider';
 import { BLOCK_LABELS, emptyBlock, type BlockType, type PageBlock } from './schema';
 import { dataService } from '@/services/dataService';
@@ -28,6 +29,7 @@ export function StudioEditBar() {
   if (!isStaff || !on || !studio.slug) return null;
 
   const selected = studio.draft.blocks.find((b) => b.id === studio.selectedId);
+  const overlay = studio.slug === 'home';
 
   const move = (id: string, dir: -1 | 1) => {
     const blocks = [...studio.draft.blocks];
@@ -47,8 +49,25 @@ export function StudioEditBar() {
   };
 
   return (
-    <div className="sticky top-[72px] z-40 border-b border-slate-200 bg-white/95 backdrop-blur-md">
-      <div className="w-full px-4 md:w-[90vw] md:mx-auto py-2 flex flex-wrap items-center gap-2">
+    <div
+      className={cn(
+        'z-40',
+        overlay
+          ? 'fixed inset-x-0 pointer-events-none flex justify-center px-4 top-[calc(var(--public-chrome-h,72px)+8px)]'
+          : 'sticky top-[72px] border-b border-slate-200 bg-white/95 backdrop-blur-md'
+      )}
+    >
+      <div
+        className={cn(
+          overlay
+            ? cn(
+                'pointer-events-auto rounded-2xl border border-white/70 bg-white/95 backdrop-blur-md shadow-lg shadow-[#2B0116]/20',
+                studio.editing ? 'w-full md:w-[90vw]' : 'w-auto'
+              )
+            : 'w-full md:w-[90vw] md:mx-auto'
+        )}
+      >
+      <div className="px-4 py-2 flex flex-wrap items-center gap-2">
         <p className="text-[10px] font-bold uppercase tracking-widest text-[#660033] mr-2">Page studio</p>
         <Button size="sm" variant={studio.editing ? 'primary' : 'secondary'} onClick={() => studio.setEditing(!studio.editing)}>
           {studio.editing ? 'Done' : 'Edit this page'}
@@ -97,7 +116,7 @@ export function StudioEditBar() {
         )}
       </div>
       {studio.editing && selected && (
-        <div className="w-full px-4 md:w-[90vw] md:mx-auto pb-3 flex flex-wrap items-end gap-3">
+        <div className="px-4 pb-3 flex flex-wrap items-end gap-3">
           <span
             draggable
             onDragStart={(e) => {
@@ -171,6 +190,7 @@ export function StudioEditBar() {
           )}
         </div>
       )}
+      </div>
     </div>
   );
 }

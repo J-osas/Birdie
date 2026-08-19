@@ -197,6 +197,7 @@ const DEFAULT_PLATFORM_SETTINGS: PlatformSettings = {
   support_whatsapp: null,
   office_address: null,
   page_studio_enabled: false,
+  help_assistant_enabled: false,
   openai_secret_last4: null,
   updated_at: new Date().toISOString(),
 };
@@ -219,6 +220,7 @@ function mapPlatformSettings(data: Record<string, unknown>): PlatformSettings {
     reg_client_enabled: data.reg_client_enabled !== false,
     reg_pro_enabled: data.reg_pro_enabled !== false,
     page_studio_enabled: data.page_studio_enabled === true,
+    help_assistant_enabled: data.help_assistant_enabled === true,
     openai_secret_last4: (data.openai_secret_last4 as string) || null,
   };
 }

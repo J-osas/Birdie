@@ -39,6 +39,7 @@ export default function SettingsPage() {
   const [bannerOn, setBannerOn] = useState(false);
   const [bannerText, setBannerText] = useState('');
   const [pageStudio, setPageStudio] = useState(false);
+  const [helpAssistant, setHelpAssistant] = useState(false);
   const [platformName, setPlatformName] = useState('Birdie');
   const [supportEmail, setSupportEmail] = useState('');
   const [supportPhone, setSupportPhone] = useState('');
@@ -73,6 +74,7 @@ export default function SettingsPage() {
     setBannerOn(Boolean(settings.public_banner_enabled));
     setBannerText(settings.public_banner_text || '');
     setPageStudio(settings.page_studio_enabled === true);
+    setHelpAssistant(settings.help_assistant_enabled === true);
     setPlatformName(settings.platform_name || 'Birdie');
     setSupportEmail(settings.support_email || '');
     setSupportPhone(settings.support_phone || '');
@@ -188,6 +190,7 @@ export default function SettingsPage() {
           bannerOn={bannerOn}
           bannerText={bannerText}
           pageStudio={pageStudio}
+          helpAssistant={helpAssistant}
           setRegClient={setRegClient}
           setRegPro={setRegPro}
           setEmails={setEmails}
@@ -198,6 +201,7 @@ export default function SettingsPage() {
           setBannerOn={setBannerOn}
           setBannerText={setBannerText}
           setPageStudio={setPageStudio}
+          setHelpAssistant={setHelpAssistant}
           saving={switchSaving}
           saved={switchSaved}
           error={switchError}
@@ -214,6 +218,7 @@ export default function SettingsPage() {
                 public_banner_enabled: bannerOn,
                 public_banner_text: bannerText.trim() || null,
                 page_studio_enabled: pageStudio,
+                help_assistant_enabled: helpAssistant,
               },
               'switches',
               setSwitchSaving,

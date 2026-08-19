@@ -12,6 +12,7 @@ export function SwitchesSection({
   bannerOn,
   bannerText,
   pageStudio,
+  helpAssistant,
   setRegClient,
   setRegPro,
   setEmails,
@@ -22,6 +23,7 @@ export function SwitchesSection({
   setBannerOn,
   setBannerText,
   setPageStudio,
+  setHelpAssistant,
   onSave,
   saving,
   saved,
@@ -37,6 +39,7 @@ export function SwitchesSection({
   bannerOn: boolean;
   bannerText: string;
   pageStudio: boolean;
+  helpAssistant: boolean;
   setRegClient: (v: boolean) => void;
   setRegPro: (v: boolean) => void;
   setEmails: (v: boolean) => void;
@@ -47,6 +50,7 @@ export function SwitchesSection({
   setBannerOn: (v: boolean) => void;
   setBannerText: (v: string) => void;
   setPageStudio: (v: boolean) => void;
+  setHelpAssistant: (v: boolean) => void;
   onSave: () => Promise<void>;
   saving: boolean;
   saved: boolean;
@@ -120,6 +124,12 @@ export function SwitchesSection({
         hint="Lets staff rearrange public pages and talk to the page AI. Off = the coded site, unchanged."
         checked={pageStudio}
         onChange={setPageStudio}
+      />
+      <ToggleRow
+        label="Public help bubble"
+        hint="Shows a chat bubble on the public site and in the app. It answers with information and links only. Off = no bubble."
+        checked={helpAssistant}
+        onChange={setHelpAssistant}
       />
       <ToggleRow
         label="Staff-only lock"

@@ -24,7 +24,9 @@ export function OpenAiSection({ isAdmin, last4 }: { isAdmin: boolean; last4?: st
         hint="Only an admin can paste the OpenAI key. Operations can still use Studio once a key is saved."
       >
         <p className="text-sm font-medium text-[var(--app-muted)]">
-          {savedLast4 ? `A key is saved (••••${savedLast4}).` : 'No OpenAI key saved yet.'}
+          {savedLast4
+            ? `A key is saved (••••${savedLast4}). Studio and the public help bubble can use it.`
+            : 'No OpenAI key saved yet.'}
         </p>
       </SectionCard>
     );
@@ -34,7 +36,7 @@ export function OpenAiSection({ isAdmin, last4 }: { isAdmin: boolean; last4?: st
     <SectionCard
       id="openai"
       title="Page AI (OpenAI)"
-      hint="The key stays on the server. The chat in Studio uses it to change public page drafts only — never hiring or payments."
+      hint="The key stays on the server. Studio uses it for page drafts. The public help bubble uses it for answers and links only — never hiring or payments."
       onSave={async () => {
         if (!key.trim()) {
           setError('Paste a key to save.');

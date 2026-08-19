@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import PublicHeader from './PublicHeader';
 import { StudioEditBar } from '@/features/studio/StudioEditBar';
@@ -35,6 +35,9 @@ export default function PublicLayout() {
   const banner = settings?.public_banner_enabled && settings.public_banner_text?.trim();
   const hiresOpen = settings?.hires_enabled !== false;
   const proOpen = settings?.reg_pro_enabled !== false;
+  const onHome = location.pathname === '/';
+  const chromeRef = useRef<HTMLDivElement>(null);
+  const [chromeH, setChromeH] = useState(72);
 
   useEffect(() => {
     const slug = marketingSlug(location.pathname);
@@ -42,14 +45,38 @@ export default function PublicLayout() {
     else studio.detach();
   }, [location.pathname, studio.attach, studio.detach]);
 
+  useEffect(() => {
+    const el = chromeRef.current;
+    if (!onHome || !el) return;
+    const apply = () => setChromeH(Math.round(el.getBoundingClientRect().height));
+    apply();
+    const ro = new ResizeObserver(apply);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [onHome, banner]);
+
+  const notice = banner ? (
+    <div className="bg-[#660033] text-white text-center text-sm font-bold px-4 py-2">
+      {settings.public_banner_text}
+    </div>
+  ) : null;
+
   return (
-    <div className="min-h-screen bg-[#F8FAFB] flex flex-col">
-      {banner && (
-        <div className="bg-[#660033] text-white text-center text-sm font-bold px-4 py-2">
-          {settings.public_banner_text}
+    <div
+      className="min-h-screen bg-[#F8FAFB] flex flex-col"
+      style={onHome ? ({ ['--public-chrome-h']: `${chromeH}px` } as CSSProperties) : undefined}
+    >
+      {onHome ? (
+        <div ref={chromeRef} className="fixed top-0 left-0 right-0 z-50">
+          {notice}
+          <PublicHeader />
         </div>
+      ) : (
+        <>
+          {notice}
+          <PublicHeader />
+        </>
       )}
-      <PublicHeader />
       <StudioEditBar />
       <main className="flex-1">
         <Outlet />

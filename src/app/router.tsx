@@ -41,6 +41,7 @@ import AdminSecurityPage from '@/features/admin/AdminSecurityPage';
 import AdminGalleryPage from '@/features/admin/AdminGalleryPage';
 import AdminStudioPage from '@/features/admin/AdminStudioPage';
 import ExtraMarketingPage from '@/features/public/ExtraMarketingPage';
+import { HelpAssistant } from '@/features/help/HelpAssistant';
 
 function SettingsOrAccount() {
   const { user } = useAuth();
@@ -70,6 +71,7 @@ export default function AppRouter() {
       <AuthProvider>
         <SiteMediaProvider>
           <StudioProvider>
+          <HelpAssistant />
           <Routes>
           <Route element={<PublicLayout />}>
             <Route index element={<HomePage />} />

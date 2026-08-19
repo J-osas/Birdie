@@ -15,6 +15,7 @@ function json(body: unknown, status = 200) {
 }
 
 type AdminClient = ReturnType<typeof createClient>;
+type AiProvider = 'groq' | 'openai';
 
 function cleanSecret(value: unknown): string | null {
   const trimmed = String(value || '')
@@ -23,10 +24,34 @@ function cleanSecret(value: unknown): string | null {
   return trimmed.length >= 8 ? trimmed : null;
 }
 
-async function getOpenAiKey(admin: AdminClient): Promise<string | null> {
-  const fromEnv = cleanSecret(Deno.env.get('OPENAI_API_KEY'));
+function asProvider(value: unknown): AiProvider {
+  return value === 'openai' ? 'openai' : 'groq';
+}
+
+function providerConfig(provider: AiProvider) {
+  if (provider === 'openai') {
+    return {
+      envName: 'OPENAI_API_KEY',
+      secretName: 'OPENAI_API_KEY',
+      baseUrl: 'https://api.openai.com/v1',
+      chatModel: 'gpt-4o-mini',
+      whisperModel: 'whisper-1',
+    };
+  }
+  return {
+    envName: 'GROQ_API_KEY',
+    secretName: 'GROQ_API_KEY',
+    baseUrl: 'https://api.groq.com/openai/v1',
+    chatModel: 'llama-3.3-70b-versatile',
+    whisperModel: 'whisper-large-v3',
+  };
+}
+
+async function getAiKey(admin: AdminClient, provider: AiProvider): Promise<string | null> {
+  const cfg = providerConfig(provider);
+  const fromEnv = cleanSecret(Deno.env.get(cfg.envName));
   if (fromEnv) return fromEnv;
-  const { data, error } = await admin.rpc('get_app_secret', { p_name: 'OPENAI_API_KEY' });
+  const { data, error } = await admin.rpc('get_app_secret', { p_name: cfg.secretName });
   if (error) {
     console.error('get_app_secret', error.message);
     return null;
@@ -95,7 +120,7 @@ ${who}
 Reply in a few short paragraphs or a short list. Include at least one markdown link when you point them somewhere.`;
 }
 
-async function transcribe(apiKey: string, audioBase64: string, mimeType: string) {
+async function transcribe(apiKey: string, audioBase64: string, mimeType: string, baseUrl: string, model: string) {
   if (audioBase64.length > 6_000_000) throw new Error('That recording is too long. Try a shorter one.');
   const raw = audioBase64.includes(',') ? audioBase64.split(',')[1] : audioBase64;
   const bytes = Uint8Array.from(atob(raw), (c) => c.charCodeAt(0));
@@ -103,9 +128,9 @@ async function transcribe(apiKey: string, audioBase64: string, mimeType: string)
   const file = new File([bytes], `voice.${ext}`, { type: mimeType || 'audio/webm' });
   const form = new FormData();
   form.append('file', file);
-  form.append('model', 'whisper-1');
+  form.append('model', model);
   form.append('language', 'en');
-  const res = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+  const res = await fetch(`${baseUrl}/audio/transcriptions`, {
     method: 'POST',
     headers: { Authorization: `Bearer ${apiKey}` },
     body: form,
@@ -117,24 +142,27 @@ async function transcribe(apiKey: string, audioBase64: string, mimeType: string)
 
 type ChatMessage = { role: string; content: string };
 
-async function chat(apiKey: string, system: string, history: ChatMessage[]) {
-  const res = await fetch('https://api.openai.com/v1/chat/completions', {
+async function chat(apiKey: string, system: string, history: ChatMessage[], baseUrl: string, model: string) {
+  const res = await fetch(`${baseUrl}/chat/completions`, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${apiKey}`,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: 'gpt-4o-mini',
+      model,
       temperature: 0.2,
       messages: [{ role: 'system', content: system }, ...history],
     }),
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
-    const raw = String(data?.error?.message || `OpenAI request failed (${res.status})`);
+    const raw = String(data?.error?.message || `AI request failed (${res.status})`);
     if (/api key|incorrect|invalid|unauthorized/i.test(raw)) {
       throw new Error('Help is not ready. Please use Contact or WhatsApp.');
+    }
+    if (/credits? remaining|quota|billing/i.test(raw)) {
+      throw new Error('The paid AI has no credit left. Switch to free Groq in Settings → AI.');
     }
     throw new Error(raw);
   }
@@ -152,14 +180,16 @@ Deno.serve(async (req) => {
     const { data: settings, error: settingsError } = await admin
       .from('platform_settings')
       .select(
-        'help_assistant_enabled, openai_secret_last4, hires_enabled, withdrawals_enabled, reg_client_enabled, reg_pro_enabled, consultation_fee_ngn, commission_rate, escrow_release_days, support_email, support_phone, support_whatsapp'
+        'help_assistant_enabled, ai_provider, hires_enabled, withdrawals_enabled, reg_client_enabled, reg_pro_enabled, consultation_fee_ngn, commission_rate, escrow_release_days, support_email, support_phone, support_whatsapp'
       )
       .eq('id', 'global')
       .maybeSingle();
     if (settingsError) throw settingsError;
 
     const helpOn = settings?.help_assistant_enabled === true;
-    const apiKey = await getOpenAiKey(admin);
+    const provider = asProvider(settings?.ai_provider);
+    const cfg = providerConfig(provider);
+    const apiKey = await getAiKey(admin, provider);
     const fallback =
       'I can only send you to a person from here. Open [Contact](/contact) or write to us on WhatsApp.';
 
@@ -197,7 +227,7 @@ Deno.serve(async (req) => {
       const audio = typeof body.audioBase64 === 'string' ? body.audioBase64 : '';
       const mime = typeof body.mimeType === 'string' ? body.mimeType : 'audio/webm';
       if (!audio) return json({ error: 'No audio', reply: 'No audio', text: '' });
-      const text = await transcribe(apiKey, audio, mime);
+      const text = await transcribe(apiKey, audio, mime, cfg.baseUrl, cfg.whisperModel);
       return json({ text });
     }
 
@@ -209,7 +239,10 @@ Deno.serve(async (req) => {
     }
     if (!apiKey) {
       return json({
-        reply: fallback,
+        reply:
+          provider === 'groq'
+            ? fallback
+            : 'OpenAI is selected but has no key or no credit. Switch to free Groq in Settings → AI, or use [Contact](/contact).',
         needsKey: true,
       });
     }
@@ -245,7 +278,7 @@ Deno.serve(async (req) => {
       whatsapp: whatsappUrl(settings?.support_whatsapp),
     });
 
-    const reply = (await chat(apiKey, prompt, history)) || fallback;
+    const reply = (await chat(apiKey, prompt, history, cfg.baseUrl, cfg.chatModel)) || fallback;
     return json({ reply });
   } catch (e) {
     const message = e instanceof Error ? e.message : 'Could not reach Birdie help.';

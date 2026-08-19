@@ -160,7 +160,10 @@ export interface PlatformSettings {
   office_address?: string | null;
   page_studio_enabled: boolean;
   help_assistant_enabled: boolean;
+  ai_provider: 'groq' | 'openai';
   openai_secret_last4?: string | null;
+  groq_secret_last4?: string | null;
+  gemini_secret_last4?: string | null;
   updated_at: string;
 }
 

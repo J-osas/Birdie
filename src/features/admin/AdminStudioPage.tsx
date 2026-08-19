@@ -56,7 +56,10 @@ export default function AdminStudioPage() {
   const { user, settings } = useAuth();
   const isStaff = user?.role === UserRole.ADMIN || user?.role === UserRole.OPERATIONS;
   const studioOn = settings?.page_studio_enabled === true;
-  const hasKey = Boolean(settings?.openai_secret_last4);
+  const hasKey =
+    settings?.ai_provider === 'openai'
+      ? Boolean(settings?.openai_secret_last4)
+      : Boolean(settings?.groq_secret_last4);
 
   const [turns, setTurns] = useState<ChatTurn[]>([]);
   const [draft, setDraft] = useState('');
@@ -204,9 +207,9 @@ export default function AdminStudioPage() {
       )}
       {studioOn && !hasKey && (
         <div className="rounded-[1.75rem] border border-amber-200 bg-amber-50 p-5 text-sm font-medium text-amber-900">
-          Visual editing works, but the AI needs an OpenAI key. An admin can paste it under{' '}
+          Visual editing works, but the AI needs a key. An admin can paste Groq (free) or OpenAI under{' '}
           <Link to="/app/settings#openai" className="font-bold underline">
-            Settings → Page AI
+            Settings → AI
           </Link>
           .
         </div>

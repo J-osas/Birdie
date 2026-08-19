@@ -198,7 +198,10 @@ const DEFAULT_PLATFORM_SETTINGS: PlatformSettings = {
   office_address: null,
   page_studio_enabled: false,
   help_assistant_enabled: false,
+  ai_provider: 'groq',
   openai_secret_last4: null,
+  groq_secret_last4: null,
+  gemini_secret_last4: null,
   updated_at: new Date().toISOString(),
 };
 
@@ -221,7 +224,10 @@ function mapPlatformSettings(data: Record<string, unknown>): PlatformSettings {
     reg_pro_enabled: data.reg_pro_enabled !== false,
     page_studio_enabled: data.page_studio_enabled === true,
     help_assistant_enabled: data.help_assistant_enabled === true,
+    ai_provider: data.ai_provider === 'openai' ? 'openai' : 'groq',
     openai_secret_last4: (data.openai_secret_last4 as string) || null,
+    groq_secret_last4: (data.groq_secret_last4 as string) || null,
+    gemini_secret_last4: (data.gemini_secret_last4 as string) || null,
   };
 }
 
@@ -246,6 +252,8 @@ export const dataService = {
       'paystack_secret_last4_test',
       'paystack_secret_last4_live',
       'openai_secret_last4',
+      'groq_secret_last4',
+      'gemini_secret_last4',
     ];
     const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
     for (const [key, value] of Object.entries(updates)) {

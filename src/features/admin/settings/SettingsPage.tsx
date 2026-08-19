@@ -13,7 +13,7 @@ import { ScreenSection } from './ScreenSection';
 const NAV = [
   { href: '#money', label: 'Money' },
   { href: '#payments', label: 'Card payments' },
-  { href: '#openai', label: 'Page AI' },
+  { href: '#openai', label: 'AI' },
   { href: '#switches', label: 'Switches' },
   { href: '#contact', label: 'Contact' },
   { href: '#screen', label: 'Your screen' },
@@ -178,7 +178,12 @@ export default function SettingsPage() {
               : Boolean(settings?.paystack_secret_last4_test)
           }
         />
-        <OpenAiSection isAdmin={Boolean(isAdmin)} last4={settings?.openai_secret_last4} />
+        <OpenAiSection
+          isAdmin={Boolean(isAdmin)}
+          provider={settings?.ai_provider}
+          openaiLast4={settings?.openai_secret_last4}
+          groqLast4={settings?.groq_secret_last4}
+        />
         <SwitchesSection
           regClient={regClient}
           regPro={regPro}
